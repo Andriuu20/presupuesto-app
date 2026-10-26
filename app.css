@@ -218,7 +218,9 @@ input:focus-visible, select:focus-visible, button:focus-visible, label.link:focu
 }
 
 /* ---------- receipt scan ---------- */
-.btn-scan { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--action-gift); cursor: pointer; }
+.scan-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xs); }
+.btn-scan { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; background: var(--action-gift); cursor: pointer; padding-inline: 8px; font-size: 15px; white-space: nowrap; }
+.scan-tip { margin-top: 8px; }
 .btn-scan svg { width: 22px; height: 22px; }
 .or { display: flex; align-items: center; gap: var(--space-xs); margin: var(--space-sm) 0; font-size: 13px; color: var(--ink-muted); }
 .or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--track); }

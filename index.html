@@ -83,11 +83,19 @@
 
     <section class="card" id="add-card">
       <h2>Añadir gasto</h2>
-      <label class="btn btn-scan" for="scan-file">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
-        Escanear ticket
-      </label>
+      <div class="scan-buttons">
+        <label class="btn btn-scan" for="scan-camera">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+          Hacer foto
+        </label>
+        <label class="btn btn-scan" for="scan-file">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="4" width="18" height="16" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="10" r="2" fill="currentColor"/><path d="M4 18l5-5 4 4 3-3 4 4" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg>
+          Elegir captura
+        </label>
+      </div>
+      <input type="file" id="scan-camera" accept="image/*" capture="environment" hidden>
       <input type="file" id="scan-file" accept="image/*" hidden>
+      <p class="note scan-tip">Sirve un ticket de papel o una captura de pantalla de una entrada o recibo digital.</p>
       <p class="or"><span>o apúntalo a mano</span></p>
       <form class="form" id="exp-form" novalidate>
         <div class="field wide"><label for="exp-what">Concepto</label><input id="exp-what" maxlength="80" placeholder="Ej. Supermercado" autocomplete="off"></div>

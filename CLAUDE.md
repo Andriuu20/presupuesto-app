@@ -33,7 +33,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 - Cada mes nuevo empieza con ingresos en 0.
 - Al final de cada mes: comparación con el mes anterior (frase resumen, totales, dónde más subió y bajó el gasto, tabla por categoría).
 - Los datos viven solo en el dispositivo; Ajustes tiene exportar/importar copia `.json`.
-- **Escanear ticket** (opción A, OCR en el iPhone con Tesseract.js): siempre muestra una hoja de confirmación editable. Si no reconoce la categoría, pregunta. Recuerda la categoría elegida por comercio en `data.comercios` (nombre normalizado → id). **La foto no se guarda nunca.** Opción B (IA con Claude vía un pequeño servidor) queda para más adelante si la A falla mucho.
+- **Escanear ticket** (opción A, OCR en el iPhone con Tesseract.js): siempre muestra una hoja de confirmación editable. Si no reconoce la categoría, pregunta. Dos botones: «Hacer foto» (cámara) y «Elegir captura» (galería, para entradas y recibos digitales). Las capturas en modo oscuro se invierten antes de leerlas. Recuerda la categoría elegida por comercio en `data.comercios` (nombre normalizado → id). **La foto no se guarda nunca.** Opción B (IA con Claude vía un pequeño servidor) queda para más adelante si la A falla mucho.
 
 ## Tokens de color (tema Finanzas)
 

@@ -444,11 +444,17 @@
         c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
         var ctx = c.getContext("2d");
         ctx.drawImage(img, 0, 0, c.width, c.height);
-        var px = ctx.getImageData(0, 0, c.width, c.height), d = px.data;
+        var px = ctx.getImageData(0, 0, c.width, c.height), d = px.data, sum = 0;
         for (var i = 0; i < d.length; i += 4) {
           var g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
-          g = Math.max(0, Math.min(255, (g - 128) * 1.4 + 128));
-          d[i] = d[i + 1] = d[i + 2] = g;
+          d[i] = g; sum += g;
+        }
+        // Dark-mode screenshots (light text on dark) read far better inverted.
+        var invert = sum / (d.length / 4) < 110;
+        for (var k = 0; k < d.length; k += 4) {
+          var v = invert ? 255 - d[k] : d[k];
+          v = Math.max(0, Math.min(255, (v - 128) * 1.4 + 128));
+          d[k] = d[k + 1] = d[k + 2] = v;
         }
         ctx.putImageData(px, 0, 0);
         ok({ canvas: c, url: url });
@@ -477,7 +483,7 @@
     $("scan-bar").style.width = pct.toFixed(0) + "%"; $("scan-status").textContent = label;
   }
 
-  $("scan-file").addEventListener("change", function () {
+  function onScanFile() {
     var file = this.files && this.files[0]; this.value = "";
     if (!file || isClosed(view.mes)) return;
     var job = ++ocr.job;
@@ -494,7 +500,9 @@
       $("scan-status").textContent = "No he podido leer la foto. Prueba con otra con más luz, o apúntalo a mano.";
       $("scan-bar").style.width = "0";
     });
-  });
+  }
+  $("scan-camera").addEventListener("change", onScanFile);
+  $("scan-file").addEventListener("change", onScanFile);
 
   function showScanResult(r) {
     var mes = view.mes, cats = catsFor(mes);

@@ -6,7 +6,7 @@
   // Known shops: name to show, words to find in the receipt, category hint.
   var SHOPS = [
     ["Mercadona", ["MERCADONA"], "comida"], ["Lidl", ["LIDL"], "comida"], ["Carrefour", ["CARREFOUR"], "comida"],
-    ["Dia", ["DIA %", "DIA RETAIL", "SUPERMERCADOS DIA", "DISTRIBUIDORA INTERNACIONAL DE ALIMENTACION"], "comida"],
+    ["Dia", ["DIA RETAIL", "SUPERMERCADOS DIA", "DISTRIBUIDORA INTERNACIONAL DE ALIMENTACION"], "comida"],
     ["Alcampo", ["ALCAMPO"], "comida"], ["Eroski", ["EROSKI"], "comida"], ["Consum", ["CONSUM"], "comida"],
     ["Aldi", ["ALDI"], "comida"], ["Hipercor", ["HIPERCOR"], "comida"], ["Ahorramás", ["AHORRAMAS"], "comida"],
     ["Caprabo", ["CAPRABO"], "comida"], ["bonÀrea", ["BONAREA", "BON AREA"], "comida"], ["Supermercados BM", ["SUPERMERCADOS BM", "UVESCO"], "comida"],
@@ -22,12 +22,15 @@
     ["Iberdrola", ["IBERDROLA"], "servicios"], ["Endesa", ["ENDESA"], "servicios"], ["Naturgy", ["NATURGY"], "servicios"],
     ["Movistar", ["MOVISTAR", "TELEFONICA"], "servicios"], ["Vodafone", ["VODAFONE"], "servicios"], ["Orange", ["ORANGE"], "servicios"],
     ["Digi", ["DIGI MOBIL", "DIGI SPAIN"], "servicios"],
-    ["Cinesa", ["CINESA"], "ocio"], ["Yelmo", ["YELMO"], "ocio"], ["Decathlon", ["DECATHLON"], "ocio"], ["Fnac", ["FNAC"], "ocio"],
+    ["Cinesa", ["CINESA"], "ocio"], ["Yelmo", ["YELMO"], "ocio"], ["Kinépolis", ["KINEPOLIS"], "ocio"], ["Ocine", ["OCINE"], "ocio"],
+    ["Odeon", ["ODEON"], "ocio"], ["Cines Renoir", ["RENOIR"], "ocio"], ["Golem", ["GOLEM"], "ocio"], ["Artesiete", ["ARTESIETE"], "ocio"],
+    ["Cine", ["CINES", "CINE"], "ocio"], ["Entradas.com", ["ENTRADAS.COM", "ENTRADAS COM"], "ocio"], ["Ticketmaster", ["TICKETMASTER"], "ocio"],
+    ["Eventbrite", ["EVENTBRITE"], "ocio"], ["Atrápalo", ["ATRAPALO"], "ocio"], ["Spotify", ["SPOTIFY"], "ocio"], ["Netflix", ["NETFLIX"], "ocio"], ["Decathlon", ["DECATHLON"], "ocio"], ["Fnac", ["FNAC"], "ocio"],
     ["Zara", ["ZARA"], "ocio"], ["Primark", ["PRIMARK"], "ocio"], ["Mango", ["MANGO"], "ocio"], ["H&M", ["H&M", "H & M"], "ocio"],
     ["Ikea", ["IKEA"], "vivienda"], ["Leroy Merlin", ["LEROY MERLIN"], "vivienda"], ["Bricomart", ["BRICOMART"], "vivienda"], ["Bauhaus", ["BAUHAUS"], "vivienda"]
   ];
 
-  var GENERIC = ["Farmacia", "Óptica", "Parking", "Metro"];
+  var GENERIC = ["Farmacia", "Óptica", "Parking", "Metro", "Cine"];
 
   // Words a category name may use for each hint, so a hint finds "Supermercado" as well as "Comida".
   var HINT_WORDS = {
@@ -85,7 +88,7 @@
     for (var i = 0; i < SHOPS.length; i++) {
       for (var j = 0; j < SHOPS[i][1].length; j++) {
         var w = SHOPS[i][1][j];
-        var re = new RegExp("(^|[^A-Z])" + w.replace(/[.*+?^${}()|[\]\\]/g, "\\$&").replace("%", "") + "([^A-Z]|$)");
+        var re = new RegExp("(^|[^A-Z])" + w.trim().replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "([^A-Z]|$)");
         if (!re.test(all)) continue;
         // Generic shop types keep the receipt's own name ("Farmacia López García").
         if (GENERIC.indexOf(SHOPS[i][0]) >= 0) {
