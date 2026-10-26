@@ -303,3 +303,6 @@ input.mini { width: 4em; min-height: 40px; padding: 6px 8px; text-align: center;
 .help ol { padding-left: 20px; display: grid; gap: 6px; margin: 8px 0; }
 .help p { margin: 8px 0; }
 .help code { font-size: 13px; background: var(--track); padding: 1px 5px; border-radius: 4px; }
+.topup-note { display: grid; gap: var(--space-xs); margin-top: var(--space-xs); padding: var(--space-sm); border-radius: var(--radius-md); background: var(--track); }
+.topup-note p { margin: 0; font-size: 14px; font-weight: 700; }
+.topup-note .btn-ghost { background: var(--surface-card); border: 1px solid var(--field-line); }

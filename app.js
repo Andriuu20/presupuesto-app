@@ -135,6 +135,7 @@
     $("exp-date").value = d.slice(0, 7) === mes ? d : mes + "-01";
     showError("exp-error"); showError("cat-error");
     $("fijo-form").hidden = true; $("extra-form").hidden = true; $("extra-date").value = "";
+    $("topup-note").hidden = true; $("paste-box").hidden = true;
     render(); window.scrollTo(0, 0);
   }
   function openIndex() {
@@ -764,10 +765,18 @@
   }
 
   /* ---------- Apple Pay purchase pasted from the Shortcuts automation ---------- */
-  function usePasted(text) {
+  var pendingTopUp = null;
+  function usePasted(text, force) {
     var r = window.ReceiptParse.parseApplePay(text);
     if (!r) { showPasteBox("No he encontrado ninguna compra en lo que has pegado. Mantén pulsado el recuadro, elige «Pegar» y pulsa «Usar»."); return; }
     $("paste-box").hidden = true; $("paste-text").value = "";
+    if (!force && window.ReceiptParse.isTopUp(text)) {
+      pendingTopUp = text;
+      $("topup-text").textContent = "«" + (r.comercio || "Revolut") + (r.total ? " · " + eur.format(r.total) : "") + "» parece una recarga de Revolut, no un gasto, así que no lo he apuntado.";
+      $("topup-note").hidden = false;
+      return;
+    }
+    $("topup-note").hidden = true; pendingTopUp = null;
     r.fecha = ymd(new Date());
     $("scan-sheet").hidden = false; document.body.style.overflow = "hidden";
     showScanResult(r, "Compra de Apple Pay");
@@ -783,6 +792,8 @@
     else showPasteBox();
   });
   $("paste-use").addEventListener("click", function () { usePasted($("paste-text").value); });
+  $("topup-ok").addEventListener("click", function () { $("topup-note").hidden = true; pendingTopUp = null; });
+  $("topup-add").addEventListener("click", function () { if (pendingTopUp) usePasted(pendingTopUp, true); });
   $("paste-cancel").addEventListener("click", function () { $("paste-box").hidden = true; $("paste-text").value = ""; });
 
   function updateCatQuestion() {

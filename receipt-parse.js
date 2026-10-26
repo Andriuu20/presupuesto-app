@@ -162,6 +162,9 @@
     return { comercio: shop.comercio || (merchant ? titleCase(merchant).slice(0, 40) : ""), pista: shop.pista, total: total, fecha: null };
   }
 
-  var api = { parse: parse, parseApplePay: parseApplePay, guessCategory: guessCategory, norm: norm, amounts: amounts };
+  // Money moved into your own account (e.g. topping up Revolut with Apple Pay), not spending.
+  function isTopUp(text) { return /revolut|top.?up|recarga|add money|a[ñn]adir dinero/i.test(String(text || "")); }
+
+  var api = { parse: parse, parseApplePay: parseApplePay, isTopUp: isTopUp, guessCategory: guessCategory, norm: norm, amounts: amounts };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.ReceiptParse = api;
 })(this);
