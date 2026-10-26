@@ -16,77 +16,108 @@
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
-<header class="bar">
-  <div class="bar-inner">
-    <button type="button" class="icon-btn" id="prev" aria-label="Mes anterior">‹</button>
-    <div class="bar-title">
-      <p class="eyebrow">Presupuesto</p>
-      <h1 id="month">—</h1>
-    </div>
-    <button type="button" class="icon-btn" id="next" aria-label="Mes siguiente">›</button>
-  </div>
-</header>
-
-<main class="page">
-  <section class="card summary" aria-label="Resumen del mes">
-    <div class="figure">
-      <label for="income">Ingresos</label>
-      <div class="income"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
-    </div>
-    <div class="figure"><span>Gastos</span><strong id="exp">0 €</strong></div>
-    <div class="figure saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
-  </section>
-
-  <section class="card">
-    <h2>Añadir gasto</h2>
-    <form class="form" id="exp-form" novalidate>
-      <div class="field wide"><label for="exp-what">Concepto</label><input id="exp-what" maxlength="80" placeholder="Ej. Supermercado" autocomplete="off"></div>
-      <div class="field"><label for="exp-amount">Importe (€)</label><input id="exp-amount" type="text" inputmode="decimal" placeholder="25,50" autocomplete="off"></div>
-      <div class="field"><label for="exp-cat">Categoría</label><select id="exp-cat"></select></div>
-      <div class="field"><label for="exp-date">Fecha</label><input id="exp-date" type="date"></div>
-      <button class="btn btn-yes" type="submit">Añadir gasto</button>
-    </form>
-    <p class="form-error" id="exp-error" hidden></p>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>Por categoría</h2><button type="button" class="link" id="toggle-cats">Editar categorías</button></div>
-    <div class="rows" id="rows"></div>
-    <p class="legend">La barra es lo gastado; la línea vertical, el límite.</p>
-    <form class="form cat" id="cat-form" novalidate hidden>
-      <div class="field wide"><label for="cat-name">Nueva categoría</label><input id="cat-name" maxlength="40" placeholder="Ej. Educación" autocomplete="off"></div>
-      <div class="field"><label for="cat-limit">Límite (€)</label><input id="cat-limit" type="text" inputmode="decimal" placeholder="200" autocomplete="off"></div>
-      <button class="btn btn-yes" type="submit">Añadir categoría</button>
-    </form>
-    <p class="form-error" id="cat-error" hidden></p>
-  </section>
-
-  <section class="card">
-    <div class="card-head"><h2>Gastos del mes</h2><span class="note" id="count"></span></div>
-    <ul class="list" id="list"></ul>
-  </section>
-
-  <section class="card settings">
-    <h2>Ajustes</h2>
-    <div class="setting">
-      <span>Tema</span>
-      <div class="switch" role="group" aria-label="Tema">
-        <button type="button" data-t="business" aria-pressed="true">Finanzas</button>
-        <button type="button" data-t="light" aria-pressed="false">Daylight</button>
-        <button type="button" data-t="dark" aria-pressed="false">Night</button>
+<!-- Index: one tile per month of the year -->
+<div id="screen-index">
+  <header class="bar">
+    <div class="bar-inner">
+      <button type="button" class="icon-btn" id="year-prev" aria-label="Año anterior">‹</button>
+      <div class="bar-title">
+        <p class="eyebrow">Presupuesto</p>
+        <h1 id="year">—</h1>
       </div>
+      <button type="button" class="icon-btn" id="year-next" aria-label="Año siguiente">›</button>
     </div>
-    <div class="setting">
-      <span>Copia de seguridad</span>
-      <div class="actions">
-        <button type="button" class="link" id="export">Exportar</button>
-        <label class="link" for="import-file">Importar</label>
-        <input type="file" id="import-file" accept="application/json,.json" hidden>
+  </header>
+  <main class="page">
+    <section class="months" id="months" aria-label="Meses del año"></section>
+    <section class="card year-total">
+      <span>Ahorro del año</span>
+      <strong id="year-saving">0 €</strong>
+    </section>
+    <section class="card settings">
+      <h2>Ajustes</h2>
+      <div class="setting">
+        <span>Tema</span>
+        <div class="switch" role="group" aria-label="Tema">
+          <button type="button" data-t="business" aria-pressed="true">Finanzas</button>
+          <button type="button" data-t="light" aria-pressed="false">Daylight</button>
+          <button type="button" data-t="dark" aria-pressed="false">Night</button>
+        </div>
       </div>
+      <div class="setting">
+        <span>Copia de seguridad</span>
+        <div class="actions">
+          <button type="button" class="link" id="export">Exportar</button>
+          <label class="link" for="import-file">Importar</label>
+          <input type="file" id="import-file" accept="application/json,.json" hidden>
+        </div>
+      </div>
+      <p class="note" id="settings-msg" role="status">Tus datos se guardan solo en este dispositivo. Exporta una copia de vez en cuando.</p>
+    </section>
+  </main>
+</div>
+
+<!-- One month -->
+<div id="screen-month" hidden>
+  <header class="bar">
+    <div class="bar-inner">
+      <button type="button" class="back-btn" id="back">‹ Meses</button>
+      <div class="bar-title">
+        <p class="eyebrow" id="month-state">En curso</p>
+        <h1 id="month">—</h1>
+      </div>
+      <span class="bar-spacer" aria-hidden="true"></span>
     </div>
-    <p class="note" id="settings-msg" role="status">Tus datos se guardan solo en este dispositivo. Exporta una copia de vez en cuando.</p>
-  </section>
-</main>
+  </header>
+
+  <main class="page">
+    <section class="card summary" aria-label="Resumen del mes">
+      <div class="figure">
+        <label for="income" id="income-label">Ingresos</label>
+        <div class="income" id="income-edit"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
+        <strong id="income-read" hidden></strong>
+      </div>
+      <div class="figure"><span>Gastos</span><strong id="exp">0 €</strong></div>
+      <div class="figure saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
+    </section>
+
+    <section class="card" id="add-card">
+      <h2>Añadir gasto</h2>
+      <form class="form" id="exp-form" novalidate>
+        <div class="field wide"><label for="exp-what">Concepto</label><input id="exp-what" maxlength="80" placeholder="Ej. Supermercado" autocomplete="off"></div>
+        <div class="field"><label for="exp-amount">Importe (€)</label><input id="exp-amount" type="text" inputmode="decimal" placeholder="25,50" autocomplete="off"></div>
+        <div class="field"><label for="exp-cat">Categoría</label><select id="exp-cat"></select></div>
+        <div class="field"><label for="exp-date">Fecha</label><input id="exp-date" type="date"></div>
+        <button class="btn btn-yes" type="submit">Añadir gasto</button>
+      </form>
+      <p class="form-error" id="exp-error" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Por categoría</h2><button type="button" class="link" id="toggle-cats">Editar categorías</button></div>
+      <div class="rows" id="rows"></div>
+      <p class="legend">La barra es lo gastado; la línea vertical, el límite.</p>
+      <form class="form cat" id="cat-form" novalidate hidden>
+        <div class="field wide"><label for="cat-name">Nueva categoría</label><input id="cat-name" maxlength="40" placeholder="Ej. Educación" autocomplete="off"></div>
+        <div class="field"><label for="cat-limit">Límite (€)</label><input id="cat-limit" type="text" inputmode="decimal" placeholder="200" autocomplete="off"></div>
+        <button class="btn btn-yes" type="submit">Añadir categoría</button>
+      </form>
+      <p class="form-error" id="cat-error" hidden></p>
+    </section>
+
+    <section class="card">
+      <div class="card-head"><h2>Gastos del mes</h2><span class="note" id="count"></span></div>
+      <ul class="list" id="list"></ul>
+    </section>
+
+    <section class="card compare" id="compare" aria-labelledby="compare-title">
+      <h2 id="compare-title">Comparado con el mes anterior</h2>
+      <div id="compare-body"></div>
+    </section>
+
+    <section class="close-zone" id="close-zone"></section>
+  </main>
+</div>
 
 <script src="app.js"></script>
 </body>

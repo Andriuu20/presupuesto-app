@@ -17,3 +17,7 @@ Los datos se guardan solo en el dispositivo (localStorage). En **Ajustes → Cop
 - `index.html`, `app.css`, `app.js`: la app.
 - `manifest.webmanifest`, `icons/`: nombre, colores e iconos para instalarla.
 - `sw.js`: service worker que guarda la app en caché para usarla sin conexión.
+
+## Meses
+
+La pantalla de inicio muestra los 12 meses del año. Cada mes se puede **guardar y cerrar**: queda solo para consultar, con los límites de categoría que tenía ese día. Al final de cada mes hay una comparación con el mes anterior.
