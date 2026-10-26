@@ -139,7 +139,7 @@ input:focus-visible, select:focus-visible, button:focus-visible, label.link:focu
 
 @media (max-width: 620px) {
   .summary { grid-template-columns: 1fr 1fr; }
-  .summary .figure:first-child { grid-column: 1 / -1; }
+  
   .row, .row.has-actions { grid-template-columns: 1fr auto; }
   .row .bar-track { grid-column: 1 / -1; grid-row: 2; }
   .row .actions { grid-column: 1 / -1; grid-row: 3; justify-content: flex-start; }
@@ -247,3 +247,46 @@ input:focus-visible, select:focus-visible, button:focus-visible, label.link:focu
 .field.ask select, .field.ask input { border-color: var(--action-no); border-width: 2px; }
 .sheet-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
 .sheet-actions .btn { flex: 1; }
+
+/* ---------- summary with extra income ---------- */
+.summary { grid-template-columns: 1fr 1fr; }
+.summary .figure:first-child { grid-column: 1 / -1; }
+.small-fig { font-size: 20px !important; }
+
+/* ---------- fixed expenses and extra income ---------- */
+.head-sum { font-size: 18px; font-variant-numeric: tabular-nums; }
+.head-sum.good { color: var(--action-yes); }
+.add-link { margin-top: 4px; padding-left: 0; }
+.fixed-list .fixed-item { border-top: 1px solid var(--track); }
+.fixed-list .fixed-item:first-child { border-top: none; }
+.fixed-btn {
+  width: 100%; display: grid; grid-template-columns: 1fr auto; gap: var(--space-xs); align-items: center; text-align: left;
+  padding: 10px 0; min-height: 52px; background: none; border: none; color: var(--ink); font: inherit; cursor: pointer;
+}
+.fixed-btn:disabled { cursor: default; }
+.fixed-btn small { display: block; font-size: 12px; color: var(--ink-muted); }
+.fixed-btn .money { font-weight: 700; font-variant-numeric: tabular-nums; }
+.fixed-item.off .fixed-name, .fixed-item.off .money { text-decoration: line-through; color: var(--ink-muted); }
+.check { display: inline-block; width: 1.2em; font-weight: 700; color: var(--action-yes); }
+.fixed-item.off .check { color: var(--ink-muted); }
+.fixed-row .fixed-note { font-size: 13px; color: var(--ink-muted); }
+.stack-form { display: grid; gap: var(--space-sm); margin-top: var(--space-xs); padding-top: var(--space-sm); border-top: 1px solid var(--track); }
+fieldset.field { border: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+fieldset.field legend { font-size: 12px; font-weight: 700; color: var(--ink-muted); padding: 0; margin-bottom: 4px; }
+.radio { display: flex; align-items: center; gap: 8px; min-height: 44px; font-size: 16px; }
+.radio input[type="radio"] { width: 22px; height: 22px; min-height: 0; margin: 0; accent-color: var(--action-yes); }
+input.mini { width: 4em; min-height: 40px; padding: 6px 8px; text-align: center; }
+.sheet .sheet-meta { margin: -6px 0 0; color: var(--ink-muted); font-size: 14px; }
+.sheet .btn-block { width: 100%; }
+.btn-ghost { background: var(--track); color: var(--ink); }
+.btn-danger { background: var(--action-no); }
+.amount-row { display: grid; grid-template-columns: 1fr; gap: var(--space-xs); }
+.amount-row .two { display: grid; grid-template-columns: 1fr 1fr; gap: var(--space-xs); }
+.sheet .divider { height: 1px; background: var(--track); margin: 4px 0; }
+.extra-tipo { font-weight: 700; }
+.good-text { color: var(--action-yes); }
+
+/* Long month names ("Septiembre 2026") stay on one line next to the back button. */
+#screen-month h1 { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+#screen-month .bar-title { flex: 1; }
+.bar-inner > .back-btn, .bar-spacer { width: 80px; padding: 0 8px; }

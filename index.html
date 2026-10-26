@@ -73,12 +73,57 @@
   <main class="page">
     <section class="card summary" aria-label="Resumen del mes">
       <div class="figure">
-        <label for="income" id="income-label">Ingresos</label>
+        <label for="income" id="income-label">Ingreso principal</label>
         <div class="income" id="income-edit"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
         <strong id="income-read" hidden></strong>
       </div>
+      <div class="figure"><span>Ingresos extra</span><strong class="small-fig" id="extra-sum">0 €</strong></div>
+      <div class="figure"><span>Total ingresos</span><strong class="small-fig" id="inc-total">0 €</strong></div>
       <div class="figure"><span>Gastos</span><strong id="exp">0 €</strong></div>
       <div class="figure saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
+    </section>
+
+    <section class="card" id="fijos-card">
+      <div class="card-head"><h2>Gastos fijos</h2><strong class="head-sum" id="fijos-sum">0 €</strong></div>
+      <ul class="list fixed-list" id="fijos-list"></ul>
+      <button type="button" class="link add-link" id="fijo-new">+ Nuevo gasto fijo</button>
+      <form class="stack-form" id="fijo-form" novalidate hidden>
+        <div class="field"><label for="fijo-name">Nombre</label><input id="fijo-name" maxlength="40" placeholder="Ej. Netflix, Préstamo coche" autocomplete="off"></div>
+        <div class="field"><label for="fijo-amount">Importe al mes (€)</label><input id="fijo-amount" type="text" inputmode="decimal" placeholder="12,99" autocomplete="off"></div>
+        <fieldset class="field">
+          <legend>Duración</legend>
+          <label class="radio"><input type="radio" name="fijo-dur" id="fijo-dur-all" value="all" checked> Todos los meses</label>
+          <label class="radio"><input type="radio" name="fijo-dur" id="fijo-dur-n" value="n"> Durante
+            <input id="fijo-n" type="text" inputmode="numeric" class="mini" value="4" aria-label="Número de meses"> meses</label>
+        </fieldset>
+        <p class="note" id="fijo-start"></p>
+        <p class="form-error" id="fijo-error" hidden></p>
+        <div class="sheet-actions">
+          <button type="submit" class="btn btn-yes">Guardar gasto fijo</button>
+          <button type="button" class="link" id="fijo-cancel">Cancelar</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="card" id="extras-card">
+      <div class="card-head"><h2>Ingresos extra</h2><strong class="head-sum good" id="extras-sum">0 €</strong></div>
+      <ul class="list" id="extras-list"></ul>
+      <button type="button" class="link add-link" id="extra-new">+ Añadir ingreso extra</button>
+      <form class="stack-form" id="extra-form" novalidate hidden>
+        <div class="field"><label for="extra-type">Tipo</label>
+          <select id="extra-type">
+            <option>Trabajo extra</option><option>Venta</option><option>Regalo</option><option>Otros</option>
+          </select>
+        </div>
+        <div class="field"><label for="extra-what">Concepto</label><input id="extra-what" maxlength="80" placeholder="Ej. Bici en Wallapop" autocomplete="off"></div>
+        <div class="field"><label for="extra-amount">Importe (€)</label><input id="extra-amount" type="text" inputmode="decimal" placeholder="85" autocomplete="off"></div>
+        <div class="field"><label for="extra-date">Fecha</label><input id="extra-date" type="date"></div>
+        <p class="form-error" id="extra-error" hidden></p>
+        <div class="sheet-actions">
+          <button type="submit" class="btn btn-yes">Añadir ingreso</button>
+          <button type="button" class="link" id="extra-cancel">Cancelar</button>
+        </div>
+      </form>
     </section>
 
     <section class="card" id="add-card">
@@ -131,6 +176,11 @@
 
     <section class="close-zone" id="close-zone"></section>
   </main>
+</div>
+
+<!-- Fixed expense actions -->
+<div class="sheet-backdrop" id="fijo-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="fijo-sheet-title" id="fijo-sheet-body"></div>
 </div>
 
 <!-- Receipt scan sheet -->

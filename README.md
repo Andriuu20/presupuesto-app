@@ -27,3 +27,8 @@ La pantalla de inicio muestra los 12 meses del año. Cada mes se puede **guardar
 En *Añadir gasto → Escanear ticket* haces una foto o eliges una de la galería. La app lee el comercio, el total y la fecha en el propio iPhone (no se envía a ningún sitio ni se guarda la foto) y te los muestra para confirmar. Si no sabe la categoría, te pregunta y la recuerda para la próxima vez.
 
 El lector usa [Tesseract.js](https://github.com/naptha/tesseract.js) (licencia Apache 2.0), incluido en `vendor/ocr/`.
+
+## Gastos fijos e ingresos extra
+
+- **Gastos fijos**: suscripciones, cuotas o deudas. Los creas una vez y aparecen solos cada mes (todos los meses o durante un número de meses). Cada mes puedes quitarlos solo de ese mes, cambiar su importe o darlos de baja.
+- **Ingresos extra**: ventas, horas extra, regalos… se suman al ingreso principal del mes.

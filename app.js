@@ -13,17 +13,23 @@
   var monthShort = new Intl.DateTimeFormat("es-ES", { month: "short" });
 
   /* ---------- storage ----------
-     data.meses["YYYY-MM"] = { ingresos, cerrado, cats }
-     `cats` is the frozen copy of the categories and limits, taken when the month is first closed. */
+     data.meses["YYYY-MM"] = { ingresos, cerrado, cats, fijos }
+     `cats` and `fijos` are frozen copies taken when the month is closed.
+     data.fijos = [{ id, nombre, importe, desde "YYYY-MM", meses (null = indefinido), baja "YYYY-MM",
+                     importes: [{ desde, importe }], cambios: { "YYYY-MM": { importe, quitado } } }]
+     data.extras = [{ id, tipo, concepto, importe, fecha, creado }] */
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function load() {
     try {
       var d = JSON.parse(localStorage.getItem(KEY));
-      if (d && Array.isArray(d.categorias) && Array.isArray(d.gastos)) { d.meses = d.meses || {}; return d; }
+      if (d && Array.isArray(d.categorias) && Array.isArray(d.gastos)) {
+        d.meses = d.meses || {}; d.fijos = d.fijos || []; d.extras = d.extras || [];
+        return d;
+      }
     } catch (e) {}
     return {
       categorias: DEFAULT_CATS.map(function (c) { return { id: uid(), nombre: c[0], limite: c[1] }; }),
-      gastos: [], meses: {}, tema: "business"
+      gastos: [], meses: {}, fijos: [], extras: [], tema: "business"
     };
   }
   var data = load();
@@ -73,13 +79,44 @@
   function hasSnapshot(mes) { return Array.isArray(info(mes).cats); }
   function catsFor(mes) { return hasSnapshot(mes) ? info(mes).cats : data.categorias; }
   function gastosFor(mes) { return data.gastos.filter(function (g) { return (g.fecha || "").slice(0, 7) === mes; }); }
+  /* Fixed expenses: one definition, shown in every month it applies to. */
+  var FIJOS = "fijos"; // pseudo-category: counts in the totals, has no limit
+  function monthsBetween(a, b) { var A = toDate(a), B = toDate(b); return (B.getFullYear() - A.getFullYear()) * 12 + B.getMonth() - A.getMonth(); }
+  function fijoActivo(f, mes) {
+    if (mes < f.desde) return false;
+    if (f.baja && mes >= f.baja) return false;
+    if (f.meses && monthsBetween(f.desde, mes) >= f.meses) return false;
+    return true;
+  }
+  function fijoImporte(f, mes) {
+    var c = (f.cambios || {})[mes];
+    if (c && c.importe != null) return c.importe;
+    var v = f.importe;
+    (f.importes || []).forEach(function (x) { if (x.desde <= mes) v = x.importe; });
+    return v;
+  }
+  function fijosFor(mes) {
+    if (Array.isArray(info(mes).fijos)) return info(mes).fijos;
+    return data.fijos.filter(function (f) { return fijoActivo(f, mes); }).map(function (f) {
+      return { id: f.id, nombre: f.nombre, importe: fijoImporte(f, mes), quitado: !!((f.cambios || {})[mes] || {}).quitado,
+               cuota: f.meses ? monthsBetween(f.desde, mes) + 1 : null, meses: f.meses || null };
+    });
+  }
+  function extrasFor(mes) { return data.extras.filter(function (x) { return (x.fecha || "").slice(0, 7) === mes; }); }
+
   function stats(mes) {
     var gs = gastosFor(mes), por = {};
-    var total = gs.reduce(function (s, g) { por[g.categoria] = (por[g.categoria] || 0) + g.importe; return s + g.importe; }, 0);
-    var inc = info(mes).ingresos || 0;
-    return { ingresos: inc, gastos: total, ahorro: inc - total, porCat: por, count: gs.length, hasData: inc > 0 || gs.length > 0 };
+    var variable = gs.reduce(function (s, g) { por[g.categoria] = (por[g.categoria] || 0) + g.importe; return s + g.importe; }, 0);
+    var fijos = fijosFor(mes).reduce(function (s, f) { return f.quitado ? s : s + f.importe; }, 0);
+    if (fijos) por[FIJOS] = fijos;
+    var ex = extrasFor(mes), extra = ex.reduce(function (s, x) { return s + x.importe; }, 0);
+    var principal = info(mes).ingresos || 0, ingresos = principal + extra, gastos = variable + fijos;
+    // Fixed expenses alone don't make a month "used": future months would all look negative.
+    return { principal: principal, extra: extra, ingresos: ingresos, fijos: fijos, gastos: gastos, ahorro: ingresos - gastos,
+             porCat: por, count: gs.length, hasData: principal > 0 || gs.length > 0 || ex.length > 0 };
   }
   function catName(id, mes) {
+    if (id === FIJOS) return "Gastos fijos";
     var lists = [catsFor(mes), data.categorias];
     for (var i = 0; i < lists.length; i++) for (var j = 0; j < lists[i].length; j++) if (lists[i][j].id === id) return lists[i][j].nombre;
     return "Sin categoría";
@@ -97,6 +134,7 @@
     $("exp-date").max = mes + "-" + pad(lastDay(mes));
     $("exp-date").value = d.slice(0, 7) === mes ? d : mes + "-01";
     showError("exp-error"); showError("cat-error");
+    $("fijo-form").hidden = true; $("extra-form").hidden = true; $("extra-date").value = "";
     render(); window.scrollTo(0, 0);
   }
   function openIndex() {
@@ -151,9 +189,11 @@
     var incInput = $("income");
     $("income-edit").hidden = closed;
     $("income-read").hidden = !closed;
-    $("income-read").textContent = eur.format(s.ingresos);
+    $("income-read").textContent = eur.format(s.principal);
     if (closed) $("income-label").removeAttribute("for"); else $("income-label").setAttribute("for", "income");
-    if (document.activeElement !== incInput) incInput.value = s.ingresos ? String(s.ingresos).replace(".", ",") : "";
+    if (document.activeElement !== incInput) incInput.value = s.principal ? String(s.principal).replace(".", ",") : "";
+    $("extra-sum").textContent = (s.extra ? "+" : "") + eur.format(s.extra);
+    $("inc-total").textContent = eur.format(s.ingresos);
     $("exp").textContent = eur.format(s.gastos);
     $("sav").textContent = money(s.ahorro);
     $("sav-box").classList.toggle("neg", s.ahorro < 0);
@@ -162,6 +202,8 @@
     $("toggle-cats").hidden = closed || hasSnapshot(mes);
     if (closed || hasSnapshot(mes)) view.editingCats = false;
 
+    renderFijos(s);
+    renderExtras(s);
     renderCats(s);
     renderSelect();
     renderList();
@@ -173,6 +215,11 @@
     var mes = view.mes, cats = catsFor(mes);
     var rows = $("rows"); rows.textContent = "";
     var max = Math.max.apply(null, [1].concat(cats.map(function (c) { return Math.max(c.limite, s.porCat[c.id] || 0); })));
+    if (s.porCat[FIJOS]) rows.appendChild(el("div", { class: "row fixed-row" }, [
+      el("span", { class: "name", text: "Gastos fijos" }),
+      el("span", { class: "fixed-note", text: "sin límite" }),
+      el("span", { class: "amt" }, [el("b", { text: eur.format(s.porCat[FIJOS]) })])
+    ]));
     if (!cats.length) rows.appendChild(el("p", { class: "empty", text: "No hay categorías. Pulsa «Editar categorías» para crear la primera." }));
 
     cats.forEach(function (c) {
@@ -256,6 +303,183 @@
     });
   }
 
+  /* ---------- fixed expenses ---------- */
+  function renderFijos(s) {
+    var mes = view.mes, closed = isClosed(mes), list = $("fijos-list"), items = fijosFor(mes);
+    list.textContent = "";
+    $("fijos-sum").textContent = eur.format(s.fijos);
+    if (!items.length) list.appendChild(el("li", { class: "empty", text: closed ? "Este mes no tuvo gastos fijos." : "Añade aquí lo que pagas todos los meses: suscripciones, cuotas, deudas…" }));
+    items.forEach(function (f) {
+      var meta = f.cuota ? "cuota " + f.cuota + " de " + f.meses : "cada mes";
+      if (f.quitado) meta = "quitado este mes";
+      list.appendChild(el("li", { class: "fixed-item" + (f.quitado ? " off" : "") }, [
+        el("button", { type: "button", class: "fixed-btn", disabled: closed ? "disabled" : null,
+          "aria-label": f.nombre + ", " + eur.format(f.importe) + ", " + meta + (closed ? "" : ". Toca para cambiarlo"),
+          on: { click: function () { openFijoSheet(f.id); } } }, [
+          el("span", null, [el("span", { class: "check", "aria-hidden": "true", text: f.quitado ? "○" : "✓" }),
+            el("span", { class: "fixed-name", text: f.nombre }), el("small", { text: meta })]),
+          el("span", { class: "money", text: eur.format(f.importe) })
+        ])
+      ]));
+    });
+    $("fijo-new").hidden = closed || !$("fijo-form").hidden;
+    if (closed) $("fijo-form").hidden = true;
+    $("fijo-start").textContent = "Empieza en " + monthName(mes) + ".";
+  }
+
+  function findFijo(id) { for (var i = 0; i < data.fijos.length; i++) if (data.fijos[i].id === id) return data.fijos[i]; return null; }
+  function setCambio(f, mes, patch) {
+    f.cambios = f.cambios || {};
+    var c = Object.assign({}, f.cambios[mes] || {}, patch);
+    Object.keys(c).forEach(function (k) { if (c[k] == null || c[k] === false) delete c[k]; });
+    if (Object.keys(c).length) f.cambios[mes] = c; else delete f.cambios[mes];
+  }
+
+  var fijoSheet = { id: null, confirm: null };
+  function openFijoSheet(id) {
+    if (isClosed(view.mes)) return;
+    fijoSheet.id = id; fijoSheet.confirm = null;
+    renderFijoSheet();
+    $("fijo-sheet").hidden = false; document.body.style.overflow = "hidden";
+  }
+  function closeFijoSheet() { $("fijo-sheet").hidden = true; document.body.style.overflow = ""; fijoSheet.id = null; }
+  function afterFijoChange() { save(); closeFijoSheet(); render(); }
+
+  function renderFijoSheet() {
+    var mes = view.mes, f = findFijo(fijoSheet.id), body = $("fijo-sheet-body");
+    body.textContent = "";
+    if (!f) { closeFijoSheet(); return; }
+    var off = !!((f.cambios || {})[mes] || {}).quitado, amount = fijoImporte(f, mes);
+    var meta = f.meses ? "Cuota " + (monthsBetween(f.desde, mes) + 1) + " de " + f.meses + " · desde " + monthWord(f.desde) + " " + f.desde.slice(0, 4) : "Todos los meses desde " + monthWord(f.desde) + " " + f.desde.slice(0, 4);
+    body.appendChild(el("h2", { id: "fijo-sheet-title", text: f.nombre + " · " + eur.format(amount) }));
+    body.appendChild(el("p", { class: "sheet-meta", text: meta }));
+
+    if (fijoSheet.confirm === "baja" || fijoSheet.confirm === "borrar") {
+      var baja = fijoSheet.confirm === "baja";
+      body.appendChild(el("p", { class: "close-ask", text: baja
+        ? "¿Dar de baja «" + f.nombre + "» desde " + monthWord(mes) + "? Dejará de salir este mes y los siguientes. Los meses anteriores no cambian."
+        : "¿Eliminar «" + f.nombre + "» del todo? Desaparece de todos los meses que no estén guardados." }));
+      body.appendChild(el("button", { type: "button", class: "btn btn-danger btn-block", text: baja ? "Sí, dar de baja" : "Sí, eliminar", on: { click: function () {
+        if (baja) { if (mes <= f.desde) data.fijos = data.fijos.filter(function (x) { return x.id !== f.id; }); else f.baja = mes; }
+        else data.fijos = data.fijos.filter(function (x) { return x.id !== f.id; });
+        afterFijoChange();
+      } } }));
+      body.appendChild(el("button", { type: "button", class: "link", text: "Cancelar", on: { click: function () { fijoSheet.confirm = null; renderFijoSheet(); } } }));
+      return;
+    }
+
+    body.appendChild(el("button", { type: "button", class: "btn btn-ghost btn-block", text: off ? "Volver a contarlo este mes" : "Quitar solo de este mes", on: { click: function () {
+      setCambio(f, mes, { quitado: !off }); afterFijoChange();
+    } } }));
+
+    body.appendChild(el("div", { class: "divider" }));
+    var input = el("input", { id: "fijo-edit-amount", type: "text", inputmode: "decimal", value: String(amount).replace(".", ","), autocomplete: "off" });
+    var err = el("p", { class: "form-error", hidden: "hidden" });
+    function newAmount() {
+      var v = num(input.value);
+      if (!(v >= 0)) { err.textContent = "Escribe un importe válido."; err.hidden = false; return null; }
+      return v;
+    }
+    body.appendChild(el("div", { class: "amount-row" }, [
+      el("div", { class: "field" }, [el("label", { for: "fijo-edit-amount", text: "Cambiar importe (€)" }), input]),
+      el("div", { class: "two" }, [
+        el("button", { type: "button", class: "btn btn-ghost", text: "Solo este mes", on: { click: function () {
+          var v = newAmount(); if (v == null) return;
+          setCambio(f, mes, { importe: v }); afterFijoChange();
+        } } }),
+        el("button", { type: "button", class: "btn btn-yes", text: "Desde este mes", on: { click: function () {
+          var v = newAmount(); if (v == null) return;
+          f.importes = (f.importes || []).filter(function (x) { return x.desde < mes; });
+          f.importes.push({ desde: mes, importe: v });
+          // Later one-off changes would hide the new amount.
+          Object.keys(f.cambios || {}).forEach(function (m) { if (m >= mes) setCambio(f, m, { importe: null }); });
+          afterFijoChange();
+        } } })
+      ]),
+      err
+    ]));
+
+    body.appendChild(el("div", { class: "divider" }));
+    body.appendChild(el("button", { type: "button", class: "link danger", text: "Dar de baja desde este mes", on: { click: function () { fijoSheet.confirm = "baja"; renderFijoSheet(); } } }));
+    body.appendChild(el("button", { type: "button", class: "link", text: "Eliminar (lo creé por error)", on: { click: function () { fijoSheet.confirm = "borrar"; renderFijoSheet(); } } }));
+    body.appendChild(el("button", { type: "button", class: "link", text: "Cerrar", on: { click: closeFijoSheet } }));
+  }
+  $("fijo-sheet").addEventListener("click", function (e) { if (e.target === this) closeFijoSheet(); });
+
+  $("fijo-new").addEventListener("click", function () {
+    $("fijo-form").hidden = false; this.hidden = true; showError("fijo-error"); $("fijo-name").focus();
+  });
+  $("fijo-cancel").addEventListener("click", function () { $("fijo-form").hidden = true; $("fijo-new").hidden = false; });
+  $("fijo-n").addEventListener("focus", function () { $("fijo-dur-n").checked = true; });
+  $("fijo-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (isClosed(view.mes)) return;
+    var n = $("fijo-name").value.trim(), v = num($("fijo-amount").value), months = null;
+    if (!n) return showError("fijo-error", "Escribe un nombre.");
+    if (!(v > 0)) return showError("fijo-error", "Escribe el importe que pagas al mes.");
+    if ($("fijo-dur-n").checked) {
+      months = parseInt($("fijo-n").value, 10);
+      if (!(months >= 1 && months <= 600)) return showError("fijo-error", "Escribe cuántos meses dura (1 o más).");
+    }
+    showError("fijo-error");
+    data.fijos.push({ id: uid(), nombre: n, importe: v, desde: view.mes, meses: months, importes: [], cambios: {} });
+    save();
+    $("fijo-name").value = ""; $("fijo-amount").value = ""; $("fijo-dur-all").checked = true; $("fijo-n").value = "4";
+    $("fijo-form").hidden = true; $("fijo-new").hidden = false;
+    render();
+  });
+
+  /* ---------- extra income ---------- */
+  function renderExtras(s) {
+    var mes = view.mes, closed = isClosed(mes), list = $("extras-list");
+    list.textContent = "";
+    $("extras-sum").textContent = (s.extra ? "+" : "") + eur.format(s.extra);
+    var items = extrasFor(mes).sort(function (a, b) { return b.fecha.localeCompare(a.fecha) || b.creado - a.creado; });
+    if (!items.length) list.appendChild(el("li", { class: "empty", text: closed ? "Este mes no hubo ingresos extra." : "Ventas, horas extra, regalos… lo que entre aparte de tu ingreso principal." }));
+    items.forEach(function (x) {
+      var actions = el("div", { class: "actions" });
+      if (!closed) {
+        if (view.confirm === "x:" + x.id) {
+          actions.appendChild(el("button", { type: "button", class: "link danger", text: "Sí, borrar", on: { click: function () {
+            data.extras = data.extras.filter(function (y) { return y.id !== x.id; }); view.confirm = null; save(); render();
+          } } }));
+          actions.appendChild(el("button", { type: "button", class: "link", text: "No", on: { click: function () { view.confirm = null; render(); } } }));
+        } else {
+          actions.appendChild(el("button", { type: "button", class: "link danger", text: "Borrar", "aria-label": "Borrar " + x.concepto, on: { click: function () { view.confirm = "x:" + x.id; render(); } } }));
+        }
+      }
+      list.appendChild(el("li", { class: "item" + (closed ? " readonly" : "") }, [
+        el("span", { class: "date", text: dayFmt.format(new Date(x.fecha + "T12:00:00")) }),
+        el("span", { class: "what" }, [el("span", { class: "extra-tipo", text: x.tipo }), x.concepto ? ": " + x.concepto : ""]),
+        el("span", { class: "money good-text", text: "+" + eur.format(x.importe) }),
+        actions
+      ]));
+    });
+    $("extra-new").hidden = closed || !$("extra-form").hidden;
+    if (closed) $("extra-form").hidden = true;
+    var date = $("extra-date");
+    date.min = mes + "-01"; date.max = mes + "-" + pad(lastDay(mes));
+    if (!date.value || date.value.slice(0, 7) !== mes) date.value = $("exp-date").value;
+  }
+
+  $("extra-new").addEventListener("click", function () {
+    $("extra-form").hidden = false; this.hidden = true; showError("extra-error"); $("extra-what").focus();
+  });
+  $("extra-cancel").addEventListener("click", function () { $("extra-form").hidden = true; $("extra-new").hidden = false; });
+  $("extra-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (isClosed(view.mes)) return;
+    var tipo = $("extra-type").value, what = $("extra-what").value.trim(), v = num($("extra-amount").value), date = $("extra-date").value;
+    if (!(v > 0)) return showError("extra-error", "Escribe un importe mayor que 0.");
+    if (!date || date.slice(0, 7) !== view.mes) return showError("extra-error", "Elige una fecha de " + monthWord(view.mes) + ".");
+    showError("extra-error");
+    data.extras.push({ id: uid(), tipo: tipo, concepto: what, importe: v, fecha: date, creado: Date.now() });
+    save();
+    $("extra-what").value = ""; $("extra-amount").value = "";
+    $("extra-form").hidden = true; $("extra-new").hidden = false;
+    render();
+  });
+
   /* ---------- comparison with the previous month ---------- */
   function renderCompare(s) {
     var mes = view.mes, prev = addMonths(mes, -1), p = stats(prev);
@@ -267,7 +491,7 @@
     // Headline.
     var d = s.ahorro - p.ahorro, pw = monthWord(prev), head;
     if (s.ahorro < 0) head = "Este mes gastaste " + eur.format(-s.ahorro) + " más de lo que ingresaste.";
-    else if (d > 0) head = "Ahorraste " + eur.format(d) + " más que en " + pw + ".";
+    else if (d > 0) head = "Ahorraste " + eur.format(d) + " más que en " + pw + (s.extra > p.extra ? ", en parte gracias a los ingresos extra." : ".");
     else if (d < 0) head = "Ahorraste " + eur.format(-d) + " menos que en " + pw + ".";
     else head = "Ahorraste lo mismo que en " + pw + ".";
     body.appendChild(el("p", { class: "compare-head" + (d < 0 || s.ahorro < 0 ? " bad" : " good"), text: head }));
@@ -281,7 +505,7 @@
         el("span", { role: "columnheader", text: "Diferencia" })
       ])
     ]);
-    [["Ingresos", p.ingresos, s.ingresos, 1], ["Gastos", p.gastos, s.gastos, -1], ["Ahorro", p.ahorro, s.ahorro, 1]].forEach(function (r) {
+    [["Ingreso principal", p.principal, s.principal, 1], ["Ingresos extra", p.extra, s.extra, 1], ["Gastos", p.gastos, s.gastos, -1], ["Ahorro", p.ahorro, s.ahorro, 1]].forEach(function (r) {
       var diff = r[2] - r[1], tone = diff === 0 ? "" : (diff * r[3] > 0 ? " good" : " bad");
       table.appendChild(el("div", { class: "cmp-row", role: "row" }, [
         el("span", { role: "cell", class: "cmp-label", text: r[0] }),
@@ -330,12 +554,13 @@
     if (isClosed(mes)) {
       zone.appendChild(el("p", { class: "note center", text: "Este mes está guardado: solo se puede consultar." }));
       zone.appendChild(el("button", { type: "button", class: "link", text: "Reabrir para editar", on: { click: function () {
-        setInfo(mes, { cerrado: false }); save(); render();
+        // Fixed expenses go live again so they can be edited; the definitions keep their history.
+        setInfo(mes, { cerrado: false, fijos: undefined }); save(); render();
       } } }));
       return;
     }
     if (view.confirm === "close") {
-      zone.appendChild(el("p", { class: "close-ask", text: "¿Guardar y cerrar " + monthWord(mes) + "? Quedará solo para consultar, con los límites de hoy." }));
+      zone.appendChild(el("p", { class: "close-ask", text: "¿Guardar y cerrar " + monthWord(mes) + "? Quedará solo para consultar, con los límites y gastos fijos de hoy." }));
       zone.appendChild(el("div", { class: "close-actions" }, [
         el("button", { type: "button", class: "btn btn-close", text: "Sí, guardar y cerrar", on: { click: closeMonth } }),
         el("button", { type: "button", class: "link", text: "Cancelar", on: { click: function () { view.confirm = null; render(); } } })
@@ -351,6 +576,7 @@
     var patch = { cerrado: true };
     // Freeze categories and limits the first time the month is closed.
     if (!hasSnapshot(mes)) patch.cats = data.categorias.map(function (c) { return { id: c.id, nombre: c.nombre, limite: c.limite }; });
+    patch.fijos = fijosFor(mes).map(function (f) { return Object.assign({}, f); });
     setInfo(mes, patch);
     view.confirm = null; view.editingCats = false; view.editing = null;
     save(); render(); window.scrollTo(0, 0);
