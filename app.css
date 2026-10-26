@@ -290,3 +290,16 @@ input.mini { width: 4em; min-height: 40px; padding: 6px 8px; text-align: center;
 #screen-month h1 { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 #screen-month .bar-title { flex: 1; }
 .bar-inner > .back-btn, .bar-spacer { width: 80px; padding: 0 8px; }
+
+/* ---------- Apple Pay paste ---------- */
+.btn-paste { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; margin-top: var(--space-xs); font-size: 15px; }
+.btn-paste svg { width: 20px; height: 20px; }
+.paste-box { display: grid; gap: var(--space-xs); margin-top: var(--space-xs); padding: var(--space-sm); background: var(--track); border-radius: var(--radius-md); }
+.paste-box label { font-size: 14px; font-weight: 700; }
+.paste-box textarea { font: 400 16px/1.3 var(--font-sans); color: var(--ink); background: var(--surface-card); border: 1px solid var(--field-line); border-radius: var(--radius-sm); padding: 10px; width: 100%; resize: vertical; }
+.scan-thumb:not([src]) { display: none; }
+.help { border-top: 1px solid var(--track); padding-top: var(--space-xs); font-size: 14px; }
+.help summary { min-height: 44px; display: flex; align-items: center; font-weight: 700; cursor: pointer; color: var(--ink); }
+.help ol { padding-left: 20px; display: grid; gap: 6px; margin: 8px 0; }
+.help p { margin: 8px 0; }
+.help code { font-size: 13px; background: var(--track); padding: 1px 5px; border-radius: 4px; }

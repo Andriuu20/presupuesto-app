@@ -52,6 +52,18 @@
           <input type="file" id="import-file" accept="application/json,.json" hidden>
         </div>
       </div>
+      <details class="help">
+        <summary>Conectar Apple Pay (con Atajos)</summary>
+        <p>Cada vez que pagues con Apple Pay, tu iPhone copiará la compra para que la pegues aquí. Se configura una sola vez en la app <b>Atajos</b>:</p>
+        <ol>
+          <li>Abre <b>Atajos</b> → pestaña <b>Automatización</b> → <b>+</b> (Nueva automatización).</li>
+          <li>Elige <b>Transacción</b>. Marca tus tarjetas, deja todas las categorías, elige <b>Ejecutar inmediatamente</b> y pulsa <b>Siguiente</b>.</li>
+          <li>Pulsa <b>Nuevo atajo en blanco</b> y añade la acción <b>Texto</b>. Escribe <code>PRESUPUESTO;</code>, toca <b>Entrada del atajo</b> y elige <b>Importe</b>, escribe <code>;</code> y vuelve a tocar <b>Entrada del atajo</b> para elegir <b>Comercio</b>.</li>
+          <li>Añade la acción <b>Copiar al portapapeles</b> (usará el Texto anterior).</li>
+          <li>Añade <b>Mostrar notificación</b> con el texto «Abre Presupuesto para apuntar la compra». Pulsa <b>OK</b>.</li>
+        </ol>
+        <p>Después de pagar, abre esta app, entra en el mes y pulsa <b>Pegar compra de Apple Pay</b>. Si copias otra cosa antes, la compra se pierde del portapapeles.</p>
+      </details>
       <p class="note" id="settings-msg" role="status">Tus datos se guardan solo en este dispositivo. Exporta una copia de vez en cuando.</p>
     </section>
   </main>
@@ -138,6 +150,18 @@
           Elegir captura
         </label>
       </div>
+      <button type="button" class="btn btn-ghost btn-paste" id="applepay-paste">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><rect x="5" y="4" width="14" height="17" rx="2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M9 4.5h6v2.5H9z" fill="currentColor"/><path d="M9 12h6M9 16h4" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
+        Pegar compra de Apple Pay
+      </button>
+      <div class="paste-box" id="paste-box" hidden>
+        <label for="paste-text" id="paste-label">Mantén pulsado el recuadro, elige «Pegar» y pulsa «Usar».</label>
+        <textarea id="paste-text" rows="2" placeholder="PRESUPUESTO;12,50 €;MERCADONA"></textarea>
+        <div class="sheet-actions">
+          <button type="button" class="btn btn-yes" id="paste-use">Usar</button>
+          <button type="button" class="link" id="paste-cancel">Cancelar</button>
+        </div>
+      </div>
       <input type="file" id="scan-camera" accept="image/*" capture="environment" hidden>
       <input type="file" id="scan-file" accept="image/*" hidden>
       <p class="note scan-tip">Sirve un ticket de papel o una captura de pantalla de una entrada o recibo digital.</p>
@@ -194,7 +218,7 @@
       <button type="button" class="link" id="scan-cancel">Cancelar</button>
     </div>
     <form id="scan-form" novalidate hidden>
-      <h2>Esto es lo que he leído</h2>
+      <h2 id="scan-form-title">Esto es lo que he leído</h2>
       <p class="note" id="scan-hint"></p>
       <div class="field"><label for="scan-what">Comercio</label><input id="scan-what" maxlength="80" autocomplete="off"></div>
       <div class="field"><label for="scan-amount" id="scan-amount-label">Total (€)</label><input id="scan-amount" type="text" inputmode="decimal" autocomplete="off"></div>

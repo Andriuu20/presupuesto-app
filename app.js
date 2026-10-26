@@ -730,9 +730,10 @@
   $("scan-camera").addEventListener("change", onScanFile);
   $("scan-file").addEventListener("change", onScanFile);
 
-  function showScanResult(r) {
+  function showScanResult(r, title) {
     var mes = view.mes, cats = catsFor(mes);
     $("scan-progress").hidden = true; $("scan-form").hidden = false;
+    $("scan-form-title").textContent = title || "Esto es lo que he leído";
     showError("scan-error");
     scan.pista = r.pista;
 
@@ -746,7 +747,7 @@
     if (r.fecha && r.fecha.slice(0, 7) === mes) date.value = r.fecha;
     else {
       date.value = $("exp-date").value;
-      if (r.fecha) hint.push("El ticket es del " + r.fecha.split("-").reverse().join("/") + ", pero estás en " + monthWord(mes) + ": he puesto una fecha de " + monthWord(mes) + ".");
+      if (r.fecha) hint.push("La compra es del " + r.fecha.split("-").reverse().join("/") + ", pero estás en " + monthWord(mes) + ": he puesto una fecha de " + monthWord(mes) + ".");
     }
 
     var sel = $("scan-cat"); sel.textContent = "";
@@ -761,6 +762,28 @@
     $("scan-hint").hidden = !hint.length;
     (r.total ? (guess ? $("scan-what") : sel) : $("scan-amount")).focus({ preventScroll: true });
   }
+
+  /* ---------- Apple Pay purchase pasted from the Shortcuts automation ---------- */
+  function usePasted(text) {
+    var r = window.ReceiptParse.parseApplePay(text);
+    if (!r) { showPasteBox("No he encontrado ninguna compra en lo que has pegado. Mantén pulsado el recuadro, elige «Pegar» y pulsa «Usar»."); return; }
+    $("paste-box").hidden = true; $("paste-text").value = "";
+    r.fecha = ymd(new Date());
+    $("scan-sheet").hidden = false; document.body.style.overflow = "hidden";
+    showScanResult(r, "Compra de Apple Pay");
+  }
+  function showPasteBox(msg) {
+    $("paste-label").textContent = msg || "Mantén pulsado el recuadro, elige «Pegar» y pulsa «Usar».";
+    $("paste-box").hidden = false; $("paste-text").focus();
+  }
+  $("applepay-paste").addEventListener("click", function () {
+    if (isClosed(view.mes)) return;
+    // iOS shows its own "Pegar" button for this; if it isn't available, fall back to a paste box.
+    if (navigator.clipboard && navigator.clipboard.readText) navigator.clipboard.readText().then(usePasted, function () { showPasteBox(); });
+    else showPasteBox();
+  });
+  $("paste-use").addEventListener("click", function () { usePasted($("paste-text").value); });
+  $("paste-cancel").addEventListener("click", function () { $("paste-box").hidden = true; $("paste-text").value = ""; });
 
   function updateCatQuestion() {
     var unknown = !$("scan-cat").value, name = $("scan-what").value.trim();

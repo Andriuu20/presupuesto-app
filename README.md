@@ -32,3 +32,7 @@ El lector usa [Tesseract.js](https://github.com/naptha/tesseract.js) (licencia A
 
 - **Gastos fijos**: suscripciones, cuotas o deudas. Los creas una vez y aparecen solos cada mes (todos los meses o durante un número de meses). Cada mes puedes quitarlos solo de ese mes, cambiar su importe o darlos de baja.
 - **Ingresos extra**: ventas, horas extra, regalos… se suman al ingreso principal del mes.
+
+## Compras con Apple Pay
+
+Con una automatización de la app **Atajos** (disparador «Transacción»), cada pago con Apple Pay se copia al portapapeles. En la app, *Añadir gasto → Pegar compra de Apple Pay* lo convierte en un gasto para confirmar. Los pasos están en *Ajustes → Conectar Apple Pay*.

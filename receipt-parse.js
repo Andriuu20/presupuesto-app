@@ -133,6 +133,35 @@
     return null;
   }
 
-  var api = { parse: parse, guessCategory: guessCategory, norm: norm, amounts: amounts };
+  // "12,50 €" / "€12.50" / "1.234,56" / "12" → number
+  function moneyValue(s) {
+    s = String(s || "").replace(/[^\d.,]/g, "");
+    if (!s) return null;
+    var sep = Math.max(s.lastIndexOf(","), s.lastIndexOf(".")), v;
+    if (sep >= 0 && s.length - sep - 1 <= 2) v = parseFloat(s.slice(0, sep).replace(/[.,]/g, "") + "." + s.slice(sep + 1));
+    else v = parseFloat(s.replace(/[.,]/g, ""));
+    return isFinite(v) && v > 0 ? Math.round(v * 100) / 100 : null;
+  }
+
+  /* Text copied by the Apple Pay shortcut: "PRESUPUESTO;12,50 €;MERCADONA".
+     Also accepts free text with an amount and a shop name ("12,50 € Mercadona"). */
+  function parseApplePay(text) {
+    var t = String(text || "").trim();
+    if (!t) return null;
+    var parts = t.split(";").map(function (x) { return x.trim(); }), amountPart, merchant;
+    if (/^presupuesto$/i.test(parts[0]) && parts.length >= 3) { amountPart = parts[1]; merchant = parts.slice(2).join(" ").trim(); }
+    else {
+      var m = t.match(/\d[\d.,]*/);
+      if (!m) return null;
+      amountPart = m[0];
+      merchant = t.replace(m[0], " ").replace(/€|EUR|\$/gi, " ").replace(/[;·|]/g, " ").replace(/\s+/g, " ").trim();
+    }
+    var total = moneyValue(amountPart);
+    if (!total && !merchant) return null;
+    var shop = merchant ? findShop([merchant]) : { comercio: "", pista: null };
+    return { comercio: shop.comercio || (merchant ? titleCase(merchant).slice(0, 40) : ""), pista: shop.pista, total: total, fecha: null };
+  }
+
+  var api = { parse: parse, parseApplePay: parseApplePay, guessCategory: guessCategory, norm: norm, amounts: amounts };
   if (typeof module !== "undefined" && module.exports) module.exports = api; else root.ReceiptParse = api;
 })(this);
