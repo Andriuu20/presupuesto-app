@@ -1,25 +1,19 @@
-/* Bloom tokens: Finanzas by default, Daylight and Night by switch. */
-:root, [data-theme="business"] {
-  --surface-page: #f5f7fa; --surface-card: #ffffff; --ink: #0b1f3a; --ink-muted: #5b6b82; --ink-inverse: #ffffff;
-  --action-yes: #1d4ed8; --action-yes-hover: #13315c; --action-no: #b42318; --action-gift: #0b1f3a;
-  --bar: #0b1f3a; --focus-ring: #1d4ed8; --track: #e6ebf2; --field: #f5f7fa; --field-line: #8a97aa;
-  --font-sans: Arial, Helvetica, sans-serif;
+/* Moderna: the app's only look. Manrope is bundled in fonts/ so it works offline. */
+@font-face { font-family: "Manrope"; font-weight: 400; font-display: swap; src: url("fonts/manrope-latin-400-normal.woff2") format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 600; font-display: swap; src: url("fonts/manrope-latin-600-normal.woff2") format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 700; font-display: swap; src: url("fonts/manrope-latin-700-normal.woff2") format("woff2"); }
+@font-face { font-family: "Manrope"; font-weight: 800; font-display: swap; src: url("fonts/manrope-latin-800-normal.woff2") format("woff2"); }
+:root {
+  --surface-page: #f3f5f8; --surface-card: #ffffff; --ink: #111827; --ink-muted: #5f6b7a; --ink-inverse: #ffffff;
+  --action-yes: #0f766e; --action-yes-hover: #115e59; --action-soft: #d9f2ee;
+  --action-no: #c2410c; --action-no-text: #9a3412; --action-no-soft: #ffedd5;
+  --action-gift: #111827; --hero: #111827; --hero-muted: #c3cad5; --hero-accent: #7ee0cf;
+  --bar: #f3f5f8; --focus-ring: #0f766e; --track: #e7eaf0; --field: #f3f5f8; --field-line: #8a94a3;
+  --font-sans: Manrope, Arial, Helvetica, sans-serif;
   --space-xs: 10px; --space-sm: 15px; --space-md: 20px; --space-lg: 30px;
-  --radius-sm: 5px; --radius-md: 10px; --radius-pill: 50px;
-  --shadow-soft: 0 4px 8px rgba(0, 0, 0, 0.1);
+  --radius-sm: 14px; --radius-md: 20px; --radius-pill: 50px;
+  --shadow-soft: 0 1px 3px rgba(17, 24, 39, 0.08);
   color-scheme: light;
-}
-[data-theme="light"] {
-  --surface-page: #f5deb3; --surface-card: #ffffff; --ink: #333333; --ink-muted: #444444;
-  --action-yes: #067a55; --action-yes-hover: #0fa875; --action-no: #ff0000; --action-gift: #ff3366;
-  --bar: #333333; --focus-ring: #333333; --track: #efe3c8; --field: #fbf3e4; --field-line: #8a7d66;
-  color-scheme: light;
-}
-[data-theme="dark"] {
-  --surface-page: #010113; --surface-card: #333333; --ink: #ffffff; --ink-muted: #f0f0f0;
-  --action-yes: #067a55; --action-yes-hover: #0fa875; --action-no: #ff0000; --action-gift: #ff3366;
-  --bar: #010113; --focus-ring: #e6f331; --track: #4a4a4a; --field: #262626; --field-line: #9a9a9a;
-  color-scheme: dark;
 }
 
 * { box-sizing: border-box; }
@@ -287,8 +281,6 @@ input.mini { width: 4em; min-height: 40px; padding: 6px 8px; text-align: center;
 .good-text { color: var(--action-yes); }
 
 /* Long month names ("Septiembre 2026") stay on one line next to the back button. */
-#screen-month h1 { font-size: 19px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-#screen-month .bar-title { flex: 1; }
 .bar-inner > .back-btn, .bar-spacer { width: 80px; padding: 0 8px; }
 
 /* ---------- Apple Pay paste ---------- */
@@ -306,3 +298,73 @@ input.mini { width: 4em; min-height: 40px; padding: 6px 8px; text-align: center;
 .topup-note { display: grid; gap: var(--space-xs); margin-top: var(--space-xs); padding: var(--space-sm); border-radius: var(--radius-md); background: var(--track); }
 .topup-note p { margin: 0; font-size: 14px; font-weight: 700; }
 .topup-note .btn-ghost { background: var(--surface-card); border: 1px solid var(--field-line); }
+
+
+/* ---------- Moderna layout ---------- */
+body { font-family: var(--font-sans); }
+.bar { color: var(--ink); background: var(--bar); }
+.bar-inner { justify-content: space-between; }
+.eyebrow { color: var(--ink-muted); font-weight: 700; opacity: 1; }
+.page-title { margin: 0; font-size: 32px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; color: var(--ink); text-align: left; }
+#screen-index .bar-title { text-align: left; }
+.year-nav { display: flex; gap: 8px; }
+.icon-btn, .back-btn {
+  background: var(--surface-card); color: var(--ink); box-shadow: 0 1px 3px rgba(17, 24, 39, 0.12);
+}
+.icon-btn { font-size: 24px; }
+.bar-inner > .back-btn { width: auto; padding: 0 16px; }
+.state-pill { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--action-yes); background: var(--action-soft); padding: 6px 12px; border-radius: 20px; }
+.card { border-radius: var(--radius-md); box-shadow: var(--shadow-soft); }
+h2 { font-weight: 800; font-size: 17px; }
+.btn { border-radius: var(--radius-sm); font-family: var(--font-sans); }
+input, select, textarea { border-radius: 12px; font-family: var(--font-sans); }
+.link { font-family: var(--font-sans); }
+.link.danger { color: var(--action-no-text); }
+
+/* Hero: what you've spent this month, big. */
+.hero { background: var(--hero); color: #ffffff; border-radius: 24px; padding: 22px; display: grid; gap: 14px; }
+.hero p { margin: 0; }
+.hero-label { font-size: 13px; color: var(--hero-muted); }
+.hero-big { font-size: 42px; font-weight: 800; letter-spacing: -0.02em; line-height: 1.1; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.hero-sub { font-size: 13px; font-weight: 600; color: var(--hero-muted); margin-top: 2px !important; }
+.hero-bar { height: 8px; background: rgba(255, 255, 255, 0.14); border-radius: 8px; overflow: hidden; }
+.hero-bar i { display: block; height: 100%; width: 0; background: var(--hero-accent); border-radius: 8px; transition: width 0.4s; }
+.hero-bar i.over { background: #fdba74; }
+.hero-chips { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.chip-box { background: rgba(255, 255, 255, 0.08); border-radius: 14px; padding: 10px; display: grid; gap: 2px; min-width: 0; align-content: start; }
+.chip-box > span, .chip-box > label { font-size: 11px; color: var(--hero-muted); }
+.chip-box strong { font-weight: 700; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+.chip-box.saving strong { color: var(--hero-accent); }
+.chip-box.saving.neg strong { color: #fdba74; }
+.chip-box .income { gap: 2px; }
+.chip-box .income input {
+  min-height: 34px; padding: 4px 6px; font: 700 16px/1.1 var(--font-sans); color: #ffffff;
+  background: rgba(255, 255, 255, 0.12); border: 1px solid rgba(255, 255, 255, 0.35); border-radius: 8px; max-width: none;
+}
+.chip-box .income input::placeholder { color: var(--hero-muted); }
+.chip-box .income input:focus-visible { outline: 2px solid var(--hero-accent); outline-offset: 1px; }
+#income-read { font-size: 16px; }
+
+/* Categories: name + pill, thin bar, "x de y". */
+.rows { gap: 16px; }
+.mrow { display: grid; gap: 6px; }
+.mrow-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.mrow-head .name { font-weight: 700; overflow-wrap: anywhere; }
+.pill { font-size: 12px; font-weight: 800; color: var(--action-yes); background: var(--action-soft); padding: 3px 10px; border-radius: 20px; white-space: nowrap; }
+.pill-over { color: var(--action-no-text); background: var(--action-no-soft); }
+.mbar { height: 8px; background: var(--track); border-radius: 8px; overflow: hidden; }
+.mbar i { display: block; height: 100%; background: var(--action-yes); border-radius: 8px; }
+.mrow.over .mbar i { background: var(--action-no); }
+.mrow-sub { font-size: 13px; color: var(--ink-muted); font-variant-numeric: tabular-nums; }
+.mrow-sub b { color: var(--ink); }
+.mrow .actions { justify-content: flex-start; }
+
+/* Month tiles and other details. */
+.tile { border-radius: 18px; }
+.tile.current { border-color: var(--action-yes); }
+.tile-saving { color: var(--action-yes); }
+.tile-saving.neg, .year-total strong.neg { color: var(--action-no-text); }
+.btn-scan, .btn-close { background: var(--hero); }
+.compare-head.bad, .cmp-diff.bad, .cmp-notes .bad b { color: var(--action-no-text); }
+.fixed-list .fixed-btn .check { color: var(--action-yes); }
+.sheet { border-radius: 24px 24px 0 0; }

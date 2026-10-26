@@ -5,14 +5,15 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Presupuesto</title>
 <meta name="description" content="Presupuesto mensual: ingresos, categorías con límite y gastos.">
-<meta name="theme-color" content="#0b1f3a">
+<meta name="theme-color" content="#f3f5f8">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="apple-mobile-web-app-title" content="Presupuesto">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icons/icon-192.png" type="image/png">
 <link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="preload" href="fonts/manrope-latin-800-normal.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="stylesheet" href="app.css">
 </head>
 <body>
@@ -20,12 +21,14 @@
 <div id="screen-index">
   <header class="bar">
     <div class="bar-inner">
-      <button type="button" class="icon-btn" id="year-prev" aria-label="Año anterior">‹</button>
       <div class="bar-title">
         <p class="eyebrow">Presupuesto</p>
-        <h1 id="year">—</h1>
+        <h1 class="page-title" id="year">—</h1>
       </div>
-      <button type="button" class="icon-btn" id="year-next" aria-label="Año siguiente">›</button>
+      <div class="year-nav">
+        <button type="button" class="icon-btn" id="year-prev" aria-label="Año anterior">‹</button>
+        <button type="button" class="icon-btn" id="year-next" aria-label="Año siguiente">›</button>
+      </div>
     </div>
   </header>
   <main class="page">
@@ -36,14 +39,6 @@
     </section>
     <section class="card settings">
       <h2>Ajustes</h2>
-      <div class="setting">
-        <span>Tema</span>
-        <div class="switch" role="group" aria-label="Tema">
-          <button type="button" data-t="business" aria-pressed="true">Finanzas</button>
-          <button type="button" data-t="light" aria-pressed="false">Daylight</button>
-          <button type="button" data-t="dark" aria-pressed="false">Night</button>
-        </div>
-      </div>
       <div class="setting">
         <span>Copia de seguridad</span>
         <div class="actions">
@@ -74,25 +69,28 @@
   <header class="bar">
     <div class="bar-inner">
       <button type="button" class="back-btn" id="back">‹ Meses</button>
-      <div class="bar-title">
-        <p class="eyebrow" id="month-state">En curso</p>
-        <h1 id="month">—</h1>
-      </div>
-      <span class="bar-spacer" aria-hidden="true"></span>
+      <span class="state-pill" id="month-state">En curso</span>
     </div>
   </header>
 
   <main class="page">
-    <section class="card summary" aria-label="Resumen del mes">
-      <div class="figure">
-        <label for="income" id="income-label">Ingreso principal</label>
-        <div class="income" id="income-edit"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
-        <strong id="income-read" hidden></strong>
+    <h1 class="page-title" id="month">—</h1>
+    <section class="hero" aria-label="Resumen del mes">
+      <div>
+        <p class="hero-label">Gastado este mes</p>
+        <p class="hero-big" id="exp">0 €</p>
+        <p class="hero-sub" id="hero-sub"></p>
       </div>
-      <div class="figure"><span>Ingresos extra</span><strong class="small-fig" id="extra-sum">0 €</strong></div>
-      <div class="figure"><span>Total ingresos</span><strong class="small-fig" id="inc-total">0 €</strong></div>
-      <div class="figure"><span>Gastos</span><strong id="exp">0 €</strong></div>
-      <div class="figure saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
+      <div class="hero-bar" aria-hidden="true"><i id="hero-bar"></i></div>
+      <div class="hero-chips">
+        <div class="chip-box">
+          <label for="income" id="income-label">Principal</label>
+          <div class="income" id="income-edit"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
+          <strong id="income-read" hidden></strong>
+        </div>
+        <div class="chip-box"><span>Extra</span><strong id="extra-sum">0 €</strong></div>
+        <div class="chip-box saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
+      </div>
     </section>
 
     <section class="card" id="fijos-card">
@@ -186,7 +184,7 @@
     <section class="card">
       <div class="card-head"><h2>Por categoría</h2><button type="button" class="link" id="toggle-cats">Editar categorías</button></div>
       <div class="rows" id="rows"></div>
-      <p class="legend">La barra es lo gastado; la línea vertical, el límite.</p>
+      <p class="legend">Cada barra se llena hasta el límite de su categoría.</p>
       <form class="form cat" id="cat-form" novalidate hidden>
         <div class="field wide"><label for="cat-name">Nueva categoría</label><input id="cat-name" maxlength="40" placeholder="Ej. Educación" autocomplete="off"></div>
         <div class="field"><label for="cat-limit">Límite (€)</label><input id="cat-limit" type="text" inputmode="decimal" placeholder="200" autocomplete="off"></div>

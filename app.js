@@ -194,7 +194,11 @@
     if (closed) $("income-label").removeAttribute("for"); else $("income-label").setAttribute("for", "income");
     if (document.activeElement !== incInput) incInput.value = s.principal ? String(s.principal).replace(".", ",") : "";
     $("extra-sum").textContent = (s.extra ? "+" : "") + eur.format(s.extra);
-    $("inc-total").textContent = eur.format(s.ingresos);
+    var pct = s.ingresos > 0 ? Math.round(s.gastos / s.ingresos * 100) : null;
+    $("hero-sub").textContent = (pct == null ? "Apunta tu ingreso principal para ver qué parte has gastado"
+      : pct + " % de los " + eur.format(s.ingresos) + " que entraron") + (s.fijos ? " · " + eur.format(s.fijos) + " son fijos" : "");
+    $("hero-bar").style.width = (pct == null ? 0 : Math.min(100, pct)) + "%";
+    $("hero-bar").classList.toggle("over", pct != null && pct > 100);
     $("exp").textContent = eur.format(s.gastos);
     $("sav").textContent = money(s.ahorro);
     $("sav-box").classList.toggle("neg", s.ahorro < 0);
@@ -215,24 +219,24 @@
   function renderCats(s) {
     var mes = view.mes, cats = catsFor(mes);
     var rows = $("rows"); rows.textContent = "";
-    var max = Math.max.apply(null, [1].concat(cats.map(function (c) { return Math.max(c.limite, s.porCat[c.id] || 0); })));
-    if (s.porCat[FIJOS]) rows.appendChild(el("div", { class: "row fixed-row" }, [
-      el("span", { class: "name", text: "Gastos fijos" }),
-      el("span", { class: "fixed-note", text: "sin límite" }),
-      el("span", { class: "amt" }, [el("b", { text: eur.format(s.porCat[FIJOS]) })])
+    if (s.porCat[FIJOS]) rows.appendChild(el("div", { class: "mrow" }, [
+      el("div", { class: "mrow-head" }, [el("span", { class: "name", text: "Gastos fijos" }), el("span", { class: "pill", text: "sin límite" })]),
+      el("div", { class: "mrow-sub" }, [el("b", { text: eur.format(s.porCat[FIJOS]) }), " este mes"])
     ]));
     if (!cats.length) rows.appendChild(el("p", { class: "empty", text: "No hay categorías. Pulsa «Editar categorías» para crear la primera." }));
 
     cats.forEach(function (c) {
       if (view.editing === c.id) { rows.appendChild(editRow(c)); return; }
       var spent = s.porCat[c.id] || 0, over = spent > c.limite;
-      var row = el("div", { class: "row" + (over ? " over" : "") + (view.editingCats ? " has-actions" : "") }, [
-        el("span", { class: "name" }, [c.nombre, over ? el("span", { class: "flag", text: "−" + eur.format(spent - c.limite) + " sobre el límite" }) : null]),
-        el("div", { class: "bar-track", role: "img", "aria-label": c.nombre + ": " + eur.format(spent) + " de " + eur.format(c.limite) }, [
-          el("i", { style: "width:" + (spent / max * 100).toFixed(1) + "%" }),
-          el("span", { class: "limit", style: "left:calc(" + (c.limite / max * 100).toFixed(1) + "% - 1px)" })
+      // Each bar is measured against its own limit; past the limit it is full and orange.
+      var pct = c.limite > 0 ? spent / c.limite * 100 : (spent > 0 ? 100 : 0);
+      var pill = over ? "+" + eur.format(spent - c.limite) + " pasado" : Math.round(pct) + " %";
+      var row = el("div", { class: "mrow" + (over ? " over" : "") }, [
+        el("div", { class: "mrow-head" }, [el("span", { class: "name", text: c.nombre }), el("span", { class: "pill" + (over ? " pill-over" : ""), text: pill })]),
+        el("div", { class: "mbar", role: "img", "aria-label": c.nombre + ": " + eur.format(spent) + " de " + eur.format(c.limite) }, [
+          el("i", { style: "width:" + Math.min(100, pct).toFixed(1) + "%" })
         ]),
-        el("span", { class: "amt" }, [el("b", { text: eur.format(spent) }), " / " + eur.format(c.limite)])
+        el("div", { class: "mrow-sub", text: eur.format(spent) + " de " + eur.format(c.limite) })
       ]);
       if (view.editingCats) {
         var actions = el("div", { class: "actions" });
@@ -826,15 +830,6 @@
   });
 
   /* ---------- theme ---------- */
-  function setTheme(t) {
-    document.documentElement.setAttribute("data-theme", t);
-    document.querySelectorAll(".switch button").forEach(function (b) { b.setAttribute("aria-pressed", String(b.dataset.t === t)); });
-    var color = getComputedStyle(document.documentElement).getPropertyValue("--bar").trim();
-    document.querySelector('meta[name="theme-color"]').setAttribute("content", color || "#0b1f3a");
-  }
-  document.querySelectorAll(".switch button").forEach(function (b) {
-    b.addEventListener("click", function () { data.tema = b.dataset.t; save(); setTheme(b.dataset.t); });
-  });
 
   /* ---------- backup ---------- */
   $("export").addEventListener("click", function () {
@@ -862,7 +857,7 @@
         if (!d || !Array.isArray(d.categorias) || !Array.isArray(d.gastos)) throw new Error("formato");
         if (!confirm("Esto sustituye todos los datos de este dispositivo por los de la copia. ¿Continuar?")) return;
         d.meses = d.meses || {}; data = d; save();
-        setTheme(data.tema || "business"); render();
+        render();
         setMsg("Copia importada: " + data.categorias.length + " categorías y " + data.gastos.length + " gastos.");
       } catch (e) { setMsg("Ese archivo no es una copia de seguridad válida de esta app."); }
     };
@@ -870,7 +865,6 @@
   });
 
   /* ---------- start ---------- */
-  setTheme(data.tema || "business");
   render();
   save();
 

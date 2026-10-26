@@ -1,5 +1,5 @@
 // Offline cache: serve the app shell from cache, refresh it in the background.
-var CACHE = "presupuesto-v9";
+var CACHE = "presupuesto-v10";
 var FILES = [
   "./",
   "index.html",
@@ -9,7 +9,11 @@ var FILES = [
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png",
-  "icons/apple-touch-icon.png"
+  "icons/apple-touch-icon.png",
+  "fonts/manrope-latin-400-normal.woff2",
+  "fonts/manrope-latin-600-normal.woff2",
+  "fonts/manrope-latin-700-normal.woff2",
+  "fonts/manrope-latin-800-normal.woff2"
 ];
 
 self.addEventListener("install", function (e) {

@@ -10,7 +10,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 
 - `index.html`: dos pantallas, `#screen-index` (índice de meses del año) y `#screen-month` (un mes).
 - `app.js`: toda la lógica, sin dependencias. Guarda en `localStorage` con la clave `presupuesto-v1`.
-- `app.css`: tokens de color del sistema de diseño Bloom (tema Finanzas por defecto; Daylight y Night por selector).
+- `app.css`: estilo **Moderna**, el único (el usuario quitó los temas Finanzas/Daylight/Night). Letra Manrope incluida en `fonts/` para funcionar sin conexión.
 - `sw.js`: caché sin conexión. **Sube el número de `CACHE` en cada cambio** para que el iPhone descargue la versión nueva.
 - `manifest.webmanifest`, `icons/`: nombre, colores e icono (fondo navy con tres barras).
 - `receipt-parse.js`: interpreta el texto de un ticket (comercio, total, fecha, pista de categoría). Funciones puras, se pueden probar con `node`.
@@ -41,9 +41,9 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 - Los datos viven solo en el dispositivo; Ajustes tiene exportar/importar copia `.json`.
 - **Escanear ticket** (opción A, OCR en el iPhone con Tesseract.js): siempre muestra una hoja de confirmación editable. Si no reconoce la categoría, pregunta. Dos botones: «Hacer foto» (cámara) y «Elegir captura» (galería, para entradas y recibos digitales). Las capturas en modo oscuro se invierten antes de leerlas. Recuerda la categoría elegida por comercio en `data.comercios` (nombre normalizado → id). **La foto no se guarda nunca.** Opción B (IA con Claude vía un pequeño servidor) queda para más adelante si la A falla mucho.
 
-## Tokens de color (tema Finanzas)
+## Estilo Moderna (tokens en `:root` de `app.css`)
 
-navy `#0b1f3a` (texto, barra superior, botón principal) · cobalt `#1d4ed8` (acciones, ahorro positivo) · crimson `#b42318` (gasto excesivo, negativos) · cloud `#f5f7fa` (fondo) · white `#ffffff` (tarjetas) · steel `#5b6b82` (texto secundario) · gold `#c9a227` (acento, nunca texto sobre blanco). Tipografía Arial. Radios 5 / 10 / 50px.
+fondo `#f3f5f8` · tarjetas `#ffffff` radio 20 · texto `#111827` · secundario `#5f6b7a` · acento verde azulado `#0f766e` (suave `#d9f2ee`) · pasado de límite naranja `#c2410c` (texto `#9a3412`, suave `#ffedd5`) · tarjeta principal oscura `#111827` con acento `#7ee0cf`. Botones radio 14. Arriba de cada mes, la tarjeta oscura muestra **lo gastado este mes** en grande (no el ahorro), % de lo que entró, barra de progreso y tres cajitas: Principal (editable), Extra, Ahorro. Categorías: nombre + pastilla (% o «+X € pasado»), barra fina medida contra su propio límite, «x de y».
 
 ## Probar
 
