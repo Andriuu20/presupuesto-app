@@ -83,6 +83,12 @@
 
     <section class="card" id="add-card">
       <h2>Añadir gasto</h2>
+      <label class="btn btn-scan" for="scan-file">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 8a2 2 0 0 1 2-2h2l1.5-2h5L16 6h2a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><circle cx="12" cy="13" r="3.5" fill="none" stroke="currentColor" stroke-width="2"/></svg>
+        Escanear ticket
+      </label>
+      <input type="file" id="scan-file" accept="image/*" hidden>
+      <p class="or"><span>o apúntalo a mano</span></p>
       <form class="form" id="exp-form" novalidate>
         <div class="field wide"><label for="exp-what">Concepto</label><input id="exp-what" maxlength="80" placeholder="Ej. Supermercado" autocomplete="off"></div>
         <div class="field"><label for="exp-amount">Importe (€)</label><input id="exp-amount" type="text" inputmode="decimal" placeholder="25,50" autocomplete="off"></div>
@@ -119,6 +125,33 @@
   </main>
 </div>
 
+<!-- Receipt scan sheet -->
+<div class="sheet-backdrop" id="scan-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="scan-title">
+    <img class="scan-thumb" id="scan-thumb" alt="Ticket escaneado">
+    <div id="scan-progress">
+      <h2 id="scan-title">Leyendo el ticket…</h2>
+      <div class="progress"><i id="scan-bar"></i></div>
+      <p class="note" id="scan-status">Preparando el lector…</p>
+      <button type="button" class="link" id="scan-cancel">Cancelar</button>
+    </div>
+    <form id="scan-form" novalidate hidden>
+      <h2>Esto es lo que he leído</h2>
+      <p class="note" id="scan-hint"></p>
+      <div class="field"><label for="scan-what">Comercio</label><input id="scan-what" maxlength="80" autocomplete="off"></div>
+      <div class="field"><label for="scan-amount" id="scan-amount-label">Total (€)</label><input id="scan-amount" type="text" inputmode="decimal" autocomplete="off"></div>
+      <div class="field"><label for="scan-date">Fecha</label><input id="scan-date" type="date"></div>
+      <div class="field"><label for="scan-cat" id="scan-cat-label">Categoría</label><select id="scan-cat"></select></div>
+      <p class="form-error" id="scan-error" hidden></p>
+      <div class="sheet-actions">
+        <button type="submit" class="btn btn-yes">Guardar gasto</button>
+        <button type="button" class="link" id="scan-close">Cancelar</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script src="receipt-parse.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

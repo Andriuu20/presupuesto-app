@@ -1,10 +1,11 @@
 // Offline cache: serve the app shell from cache, refresh it in the background.
-var CACHE = "presupuesto-v4";
+var CACHE = "presupuesto-v5";
 var FILES = [
   "./",
   "index.html",
   "app.css",
   "app.js",
+  "receipt-parse.js",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png",

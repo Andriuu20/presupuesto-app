@@ -13,6 +13,8 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 - `app.css`: tokens de color del sistema de diseño Bloom (tema Finanzas por defecto; Daylight y Night por selector).
 - `sw.js`: caché sin conexión. **Sube el número de `CACHE` en cada cambio** para que el iPhone descargue la versión nueva.
 - `manifest.webmanifest`, `icons/`: nombre, colores e icono (fondo navy con tres barras).
+- `receipt-parse.js`: interpreta el texto de un ticket (comercio, total, fecha, pista de categoría). Funciones puras, se pueden probar con `node`.
+- `vendor/ocr/`: Tesseract.js 5.1.1 + datos de español (`spa` best_int), incluidos en el repo para funcionar sin CDN ni conexión. Se cargan solo al primer escaneo.
 
 ## Modelo de datos (localStorage)
 
@@ -20,6 +22,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 { categorias: [{id, nombre, limite}],
   gastos: [{id, concepto, importe, categoria, fecha "YYYY-MM-DD", creado}],
   meses: { "YYYY-MM": { ingresos, cerrado, cats: [{id, nombre, limite}] } },
+  comercios: { "mercadona": catId, ... },
   tema: "business" | "light" | "dark" }
 ```
 
@@ -30,6 +33,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 - Cada mes nuevo empieza con ingresos en 0.
 - Al final de cada mes: comparación con el mes anterior (frase resumen, totales, dónde más subió y bajó el gasto, tabla por categoría).
 - Los datos viven solo en el dispositivo; Ajustes tiene exportar/importar copia `.json`.
+- **Escanear ticket** (opción A, OCR en el iPhone con Tesseract.js): siempre muestra una hoja de confirmación editable. Si no reconoce la categoría, pregunta. Recuerda la categoría elegida por comercio en `data.comercios` (nombre normalizado → id). **La foto no se guarda nunca.** Opción B (IA con Claude vía un pequeño servidor) queda para más adelante si la A falla mucho.
 
 ## Tokens de color (tema Finanzas)
 

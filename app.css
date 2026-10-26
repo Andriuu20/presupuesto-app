@@ -216,3 +216,32 @@ input:focus-visible, select:focus-visible, button:focus-visible, label.link:focu
   .item.readonly { grid-template-columns: 1fr auto; }
   .cmp-row { font-size: 13px; }
 }
+
+/* ---------- receipt scan ---------- */
+.btn-scan { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--action-gift); cursor: pointer; }
+.btn-scan svg { width: 22px; height: 22px; }
+.or { display: flex; align-items: center; gap: var(--space-xs); margin: var(--space-sm) 0; font-size: 13px; color: var(--ink-muted); }
+.or::before, .or::after { content: ""; flex: 1; height: 1px; background: var(--track); }
+
+.sheet-backdrop {
+  position: fixed; inset: 0; z-index: 20; display: flex; align-items: flex-end; justify-content: center;
+  background: rgba(1, 1, 19, 0.55);
+}
+.sheet {
+  width: 100%; max-width: 560px; max-height: 92vh; overflow-y: auto; display: grid; gap: var(--space-sm);
+  background: var(--surface-card); color: var(--ink); border-radius: 16px 16px 0 0;
+  padding: var(--space-md);
+  padding-left: max(var(--space-md), env(safe-area-inset-left, 0px));
+  padding-right: max(var(--space-md), env(safe-area-inset-right, 0px));
+  padding-bottom: calc(var(--space-md) + env(safe-area-inset-bottom, 0px));
+}
+.sheet h2 { margin: 0; }
+.sheet form { display: grid; gap: var(--space-sm); }
+.scan-thumb { width: 100%; max-height: 180px; object-fit: contain; border-radius: var(--radius-md); background: var(--track); }
+#scan-progress { display: grid; gap: var(--space-xs); justify-items: center; text-align: center; }
+.progress { width: 100%; height: 10px; background: var(--track); border-radius: var(--radius-pill); overflow: hidden; }
+.progress i { display: block; height: 100%; width: 0; background: var(--action-yes); border-radius: var(--radius-pill); transition: width 0.3s; }
+.field.ask label { color: var(--action-no); }
+.field.ask select, .field.ask input { border-color: var(--action-no); border-width: 2px; }
+.sheet-actions { display: flex; flex-wrap: wrap; align-items: center; gap: var(--space-xs); }
+.sheet-actions .btn { flex: 1; }

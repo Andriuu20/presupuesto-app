@@ -409,6 +409,154 @@
     render(); $("exp-cat").value = c.id;
   });
 
+  /* ---------- receipt scan ----------
+     The OCR engine (Tesseract.js) and its Spanish data live in vendor/ocr and load on the first scan.
+     The photo is only used to read the text; it is never stored. */
+  var ocr = { worker: null, loading: null, job: 0 };
+
+  function loadScript(src) {
+    return new Promise(function (ok, ko) {
+      var s = document.createElement("script"); s.src = src; s.onload = ok; s.onerror = ko; document.head.appendChild(s);
+    });
+  }
+  function getWorker(onProgress) {
+    if (ocr.worker) return Promise.resolve(ocr.worker);
+    if (!ocr.loading) {
+      var base = new URL("vendor/ocr/", location.href).href;
+      ocr.loading = (window.Tesseract ? Promise.resolve() : loadScript(base + "tesseract.min.js")).then(function () {
+        return window.Tesseract.createWorker("spa", 1, {
+          workerPath: base + "worker.min.js", corePath: base, langPath: base + "lang", gzip: true,
+          logger: function (m) { if (ocr.onProgress) ocr.onProgress(m); }
+        });
+      }).then(function (w) { ocr.worker = w; return w; }, function (e) { ocr.loading = null; throw e; });
+    }
+    ocr.onProgress = onProgress;
+    return ocr.loading;
+  }
+
+  // Shrink, grey and add contrast: faster and more accurate on phone photos.
+  function prepareImage(file) {
+    return new Promise(function (ok, ko) {
+      var img = new Image(), url = URL.createObjectURL(file);
+      img.onload = function () {
+        var scale = Math.min(1, 1800 / Math.max(img.naturalWidth, img.naturalHeight));
+        var c = document.createElement("canvas");
+        c.width = Math.round(img.naturalWidth * scale); c.height = Math.round(img.naturalHeight * scale);
+        var ctx = c.getContext("2d");
+        ctx.drawImage(img, 0, 0, c.width, c.height);
+        var px = ctx.getImageData(0, 0, c.width, c.height), d = px.data;
+        for (var i = 0; i < d.length; i += 4) {
+          var g = 0.299 * d[i] + 0.587 * d[i + 1] + 0.114 * d[i + 2];
+          g = Math.max(0, Math.min(255, (g - 128) * 1.4 + 128));
+          d[i] = d[i + 1] = d[i + 2] = g;
+        }
+        ctx.putImageData(px, 0, 0);
+        ok({ canvas: c, url: url });
+      };
+      img.onerror = function () { URL.revokeObjectURL(url); ko(new Error("imagen")); };
+      img.src = url;
+    });
+  }
+
+  var scan = { url: null, pista: null };
+  function openSheet() {
+    $("scan-sheet").hidden = false; $("scan-progress").hidden = false; $("scan-form").hidden = true;
+    $("scan-bar").style.width = "0"; $("scan-status").textContent = "Preparando el lector…";
+    document.body.style.overflow = "hidden";
+  }
+  function closeSheet() {
+    ocr.job++; // ignore any result still on its way
+    $("scan-sheet").hidden = true; document.body.style.overflow = "";
+    if (scan.url) { URL.revokeObjectURL(scan.url); scan.url = null; }
+    $("scan-thumb").removeAttribute("src");
+  }
+  function progress(m) {
+    var pct = 0, label = "Preparando el lector…";
+    if (m.status === "recognizing text") { pct = 30 + m.progress * 70; label = "Leyendo el ticket… " + Math.round(pct) + " %"; }
+    else if (/load|initializ/.test(m.status || "")) { pct = 5 + (m.progress || 0) * 25; label = "Preparando el lector (solo la primera vez)…"; }
+    $("scan-bar").style.width = pct.toFixed(0) + "%"; $("scan-status").textContent = label;
+  }
+
+  $("scan-file").addEventListener("change", function () {
+    var file = this.files && this.files[0]; this.value = "";
+    if (!file || isClosed(view.mes)) return;
+    var job = ++ocr.job;
+    openSheet();
+    prepareImage(file).then(function (prep) {
+      if (job !== ocr.job) { URL.revokeObjectURL(prep.url); return; }
+      scan.url = prep.url; $("scan-thumb").src = prep.url;
+      return getWorker(progress).then(function (w) { return w.recognize(prep.canvas); }).then(function (res) {
+        if (job !== ocr.job) return;
+        showScanResult(window.ReceiptParse.parse(res.data.text));
+      });
+    }).catch(function () {
+      if (job !== ocr.job) return;
+      $("scan-status").textContent = "No he podido leer la foto. Prueba con otra con más luz, o apúntalo a mano.";
+      $("scan-bar").style.width = "0";
+    });
+  });
+
+  function showScanResult(r) {
+    var mes = view.mes, cats = catsFor(mes);
+    $("scan-progress").hidden = true; $("scan-form").hidden = false;
+    showError("scan-error");
+    scan.pista = r.pista;
+
+    $("scan-what").value = r.comercio || "";
+    $("scan-amount").value = r.total ? String(r.total.toFixed(2)).replace(".", ",") : "";
+    $("scan-amount").parentNode.classList.toggle("ask", !r.total);
+    $("scan-amount-label").textContent = r.total ? "Total (€)" : "Total (€) · no lo he encontrado, escríbelo tú";
+
+    var date = $("scan-date"), hint = [];
+    date.min = mes + "-01"; date.max = mes + "-" + pad(lastDay(mes));
+    if (r.fecha && r.fecha.slice(0, 7) === mes) date.value = r.fecha;
+    else {
+      date.value = $("exp-date").value;
+      if (r.fecha) hint.push("El ticket es del " + r.fecha.split("-").reverse().join("/") + ", pero estás en " + monthWord(mes) + ": he puesto una fecha de " + monthWord(mes) + ".");
+    }
+
+    var sel = $("scan-cat"); sel.textContent = "";
+    sel.appendChild(el("option", { value: "", text: "Elige una categoría…" }));
+    cats.forEach(function (c) { sel.appendChild(el("option", { value: c.id, text: c.nombre })); });
+    var guess = window.ReceiptParse.guessCategory(r.comercio, r.pista, cats, data.comercios || {});
+    sel.value = guess || "";
+    updateCatQuestion();
+
+    if (!r.comercio) hint.push("No he reconocido el comercio: escribe su nombre.");
+    $("scan-hint").textContent = hint.join(" ");
+    $("scan-hint").hidden = !hint.length;
+    (r.total ? (guess ? $("scan-what") : sel) : $("scan-amount")).focus({ preventScroll: true });
+  }
+
+  function updateCatQuestion() {
+    var unknown = !$("scan-cat").value, name = $("scan-what").value.trim();
+    $("scan-cat").parentNode.classList.toggle("ask", unknown);
+    $("scan-cat-label").textContent = unknown ? "¿En qué categoría va" + (name ? " «" + name + "»" : " este gasto") + "?" : "Categoría";
+  }
+  $("scan-cat").addEventListener("change", updateCatQuestion);
+  $("scan-what").addEventListener("input", function () {
+    var cats = catsFor(view.mes), sel = $("scan-cat");
+    var learned = window.ReceiptParse.guessCategory(this.value, null, cats, data.comercios || {});
+    if (learned) sel.value = learned;
+    updateCatQuestion();
+  });
+  $("scan-cancel").addEventListener("click", closeSheet);
+  $("scan-close").addEventListener("click", closeSheet);
+
+  $("scan-form").addEventListener("submit", function (e) {
+    e.preventDefault();
+    var what = $("scan-what").value.trim(), amount = num($("scan-amount").value), cat = $("scan-cat").value, date = $("scan-date").value;
+    if (!what) return showError("scan-error", "Escribe el nombre del comercio.");
+    if (!(amount > 0)) return showError("scan-error", "Escribe el total del ticket.");
+    if (!cat) return showError("scan-error", "Elige una categoría.");
+    if (!date || date.slice(0, 7) !== view.mes) return showError("scan-error", "Elige una fecha de " + monthWord(view.mes) + ".");
+    data.gastos.push({ id: uid(), concepto: what, importe: amount, categoria: cat, fecha: date, creado: Date.now() });
+    // Remember this shop's category for next time.
+    data.comercios = data.comercios || {};
+    data.comercios[window.ReceiptParse.norm(what)] = cat;
+    save(); closeSheet(); render();
+  });
+
   /* ---------- theme ---------- */
   function setTheme(t) {
     document.documentElement.setAttribute("data-theme", t);

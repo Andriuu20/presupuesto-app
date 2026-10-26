@@ -21,3 +21,9 @@ Los datos se guardan solo en el dispositivo (localStorage). En **Ajustes → Cop
 ## Meses
 
 La pantalla de inicio muestra los 12 meses del año. Cada mes se puede **guardar y cerrar**: queda solo para consultar, con los límites de categoría que tenía ese día. Al final de cada mes hay una comparación con el mes anterior.
+
+## Escanear tickets
+
+En *Añadir gasto → Escanear ticket* haces una foto o eliges una de la galería. La app lee el comercio, el total y la fecha en el propio iPhone (no se envía a ningún sitio ni se guarda la foto) y te los muestra para confirmar. Si no sabe la categoría, te pregunta y la recuerda para la próxima vez.
+
+El lector usa [Tesseract.js](https://github.com/naptha/tesseract.js) (licencia Apache 2.0), incluido en `vendor/ocr/`.
