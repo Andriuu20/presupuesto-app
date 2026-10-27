@@ -382,3 +382,8 @@ input, select, textarea { border-radius: 12px; font-family: var(--font-sans); }
 .budget-pace { font-size: 13px; font-weight: 600; }
 .budget-pace.good { color: var(--action-yes); }
 .budget-pace.bad { color: var(--action-no-text); }
+
+/* Export to Excel */
+.export-zone { display: grid; gap: 6px; justify-items: center; text-align: center; }
+.btn-export { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; background: var(--surface-card); color: var(--ink); border: 1px solid var(--field-line); }
+.btn-export svg { width: 20px; height: 20px; }

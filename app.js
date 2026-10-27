@@ -2,7 +2,7 @@
   "use strict";
 
   var KEY = "presupuesto-v1";
-  var VERSION = "12"; // keep in step with CACHE in sw.js
+  var VERSION = "13"; // keep in step with CACHE in sw.js
   var DEFAULT_CATS = [
     ["Vivienda", 1100], ["Comida", 450], ["Transporte", 180],
     ["Servicios", 220], ["Ocio", 250], ["Salud", 120]
@@ -136,7 +136,7 @@
     $("exp-date").value = d.slice(0, 7) === mes ? d : mes + "-01";
     showError("exp-error"); showError("cat-error");
     $("fijo-form").hidden = true; $("extra-form").hidden = true; $("extra-date").value = "";
-    $("topup-note").hidden = true; $("paste-box").hidden = true;
+    $("topup-note").hidden = true; $("paste-box").hidden = true; exportMsg("");
     render(); window.scrollTo(0, 0);
   }
   function openIndex() {
@@ -900,6 +900,43 @@
       } catch (e) { setMsg("Ese archivo no es una copia de seguridad válida de esta app."); }
     };
     reader.readAsText(f);
+  });
+
+  /* ---------- export one month to Excel ---------- */
+  var excelLoading = null;
+  function loadExcel() {
+    if (window.ExcelJS) return Promise.resolve(window.ExcelJS);
+    if (!excelLoading) excelLoading = loadScript("vendor/excel/exceljs.min.js").then(function () { return window.ExcelJS; }, function (e) { excelLoading = null; throw e; });
+    return excelLoading;
+  }
+  function exportMsg(text) { $("export-msg").textContent = text || ""; $("export-msg").hidden = !text; }
+  $("export-xlsx").addEventListener("click", function () {
+    var btn = this, mes = view.mes;
+    var cats = catsFor(mes);
+    var model = {
+      titulo: "Presupuesto · " + monthName(mes),
+      principal: info(mes).ingresos || 0,
+      cats: cats.map(function (c) { return { nombre: c.nombre, limite: c.limite || 0 }; }),
+      gastos: gastosFor(mes).sort(function (a, b) { return a.fecha.localeCompare(b.fecha); })
+        .map(function (g) { return { fecha: g.fecha, concepto: g.concepto, categoria: catName(g.categoria, mes), importe: g.importe }; }),
+      fijos: fijosFor(mes).map(function (f) { return { nombre: f.nombre, importe: f.importe, cuenta: !f.quitado }; }),
+      extras: extrasFor(mes).sort(function (a, b) { return a.fecha.localeCompare(b.fecha); })
+        .map(function (x) { return { fecha: x.fecha, tipo: x.tipo, concepto: x.concepto || "", importe: x.importe }; })
+    };
+    var name = "Presupuesto " + monthName(mes) + ".xlsx";
+    btn.disabled = true; exportMsg("Preparando el Excel…");
+    loadExcel().then(function (ExcelJS) { return window.PresupuestoExport.build(ExcelJS, model); }).then(function (blob) {
+      var file = typeof File === "function" ? new File([blob], name, { type: blob.type }) : null;
+      if (file && navigator.canShare && navigator.canShare({ files: [file] })) {
+        return navigator.share({ files: [file], title: name }).then(function () { exportMsg("Excel listo: " + name); }, function (err) {
+          exportMsg(err && err.name === "AbortError" ? "" : "No se pudo compartir el Excel.");
+        });
+      }
+      var a = el("a", { href: URL.createObjectURL(blob), download: name });
+      document.body.appendChild(a); a.click(); a.remove();
+      exportMsg("Excel descargado: " + name);
+    }).catch(function () { exportMsg("No se pudo crear el Excel. Inténtalo de nuevo."); })
+      .then(function () { btn.disabled = false; });
   });
 
   /* ---------- start ---------- */

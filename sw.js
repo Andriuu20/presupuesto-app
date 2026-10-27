@@ -1,12 +1,13 @@
 // Network first: online, always the latest version (and refresh the cache);
 // offline, the cached copy. Bump CACHE on every change.
-var CACHE = "presupuesto-v12";
+var CACHE = "presupuesto-v13";
 var FILES = [
   "./",
   "index.html",
   "app.css",
   "app.js",
   "receipt-parse.js",
+  "export-xlsx.js",
   "manifest.webmanifest",
   "icons/icon-192.png",
   "icons/icon-512.png",

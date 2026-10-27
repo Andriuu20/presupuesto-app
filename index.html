@@ -204,6 +204,13 @@
       <div id="compare-body"></div>
     </section>
 
+    <section class="export-zone">
+      <button type="button" class="btn btn-ghost btn-export" id="export-xlsx">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11m0 0l-4-4m4 4l4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Exportar a Excel
+      </button>
+      <p class="note" id="export-msg" role="status" hidden></p>
+    </section>
     <section class="close-zone" id="close-zone"></section>
   </main>
 </div>
@@ -240,6 +247,7 @@
 </div>
 
 <script src="receipt-parse.js"></script>
+<script src="export-xlsx.js"></script>
 <script src="app.js"></script>
 </body>
 </html>
