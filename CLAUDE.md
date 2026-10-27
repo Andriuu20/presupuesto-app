@@ -11,7 +11,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 - `index.html`: dos pantallas, `#screen-index` (índice de meses del año) y `#screen-month` (un mes).
 - `app.js`: toda la lógica, sin dependencias. Guarda en `localStorage` con la clave `presupuesto-v1`.
 - `app.css`: estilo **Moderna**, el único (el usuario quitó los temas Finanzas/Daylight/Night). Letra Manrope incluida en `fonts/` para funcionar sin conexión.
-- `sw.js`: caché sin conexión. **Sube el número de `CACHE` en cada cambio** para que el iPhone descargue la versión nueva.
+- `sw.js`: **red primero** (con conexión siempre la última versión; sin conexión, la copia guardada). **En cada cambio sube `CACHE` en `sw.js` y `VERSION` en `app.js` al mismo número**; Ajustes muestra «Versión N» para que el usuario compruebe que se actualizó. Al tomar el control una versión nueva, la página se recarga sola una vez.
 - `manifest.webmanifest`, `icons/`: nombre, colores e icono (fondo navy con tres barras).
 - `receipt-parse.js`: interpreta el texto de un ticket (comercio, total, fecha, pista de categoría). Funciones puras, se pueden probar con `node`.
 - `vendor/ocr/`: Tesseract.js 5.1.1 + datos de español (`spa` best_int), incluidos en el repo para funcionar sin CDN ni conexión. Se cargan solo al primer escaneo.

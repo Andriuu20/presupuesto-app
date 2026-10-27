@@ -2,6 +2,7 @@
   "use strict";
 
   var KEY = "presupuesto-v1";
+  var VERSION = "12"; // keep in step with CACHE in sw.js
   var DEFAULT_CATS = [
     ["Vivienda", 1100], ["Comida", 450], ["Transporte", 180],
     ["Servicios", 220], ["Ocio", 250], ["Salud", 120]
@@ -902,10 +903,22 @@
   });
 
   /* ---------- start ---------- */
+  $("app-version").textContent = "Versión " + VERSION;
   render();
   save();
 
   if ("serviceWorker" in navigator && location.protocol !== "file:") {
-    window.addEventListener("load", function () { navigator.serviceWorker.register("sw.js").catch(function () {}); });
+    // A new version took over: reload once so the screen shows it straight away.
+    var hadController = !!navigator.serviceWorker.controller, reloaded = false;
+    navigator.serviceWorker.addEventListener("controllerchange", function () {
+      if (!hadController || reloaded) return;
+      reloaded = true; location.reload();
+    });
+    window.addEventListener("load", function () {
+      navigator.serviceWorker.register("sw.js", { updateViaCache: "none" }).then(function (reg) {
+        reg.update();
+        document.addEventListener("visibilitychange", function () { if (!document.hidden) reg.update(); });
+      }).catch(function () {});
+    });
   }
 })();

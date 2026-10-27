@@ -1,5 +1,6 @@
-// Offline cache: serve the app shell from cache, refresh it in the background.
-var CACHE = "presupuesto-v11";
+// Network first: online, always the latest version (and refresh the cache);
+// offline, the cached copy. Bump CACHE on every change.
+var CACHE = "presupuesto-v12";
 var FILES = [
   "./",
   "index.html",
@@ -17,7 +18,10 @@ var FILES = [
 ];
 
 self.addEventListener("install", function (e) {
-  e.waitUntil(caches.open(CACHE).then(function (c) { return c.addAll(FILES); }).then(function () { return self.skipWaiting(); }));
+  // cache: "reload" skips the browser's HTTP cache, so a fresh deploy is not cached stale.
+  e.waitUntil(caches.open(CACHE).then(function (c) {
+    return c.addAll(FILES.map(function (f) { return new Request(f, { cache: "reload" }); }));
+  }).then(function () { return self.skipWaiting(); }));
 });
 
 self.addEventListener("activate", function (e) {
@@ -30,14 +34,20 @@ self.addEventListener("activate", function (e) {
 
 self.addEventListener("fetch", function (e) {
   if (e.request.method !== "GET") return;
+  var url = new URL(e.request.url);
+  if (url.origin !== location.origin) return;
   e.respondWith(
-    caches.open(CACHE).then(function (cache) {
-      return cache.match(e.request, { ignoreSearch: true }).then(function (hit) {
-        var fresh = fetch(e.request).then(function (res) {
-          if (res && res.ok && new URL(e.request.url).origin === location.origin) cache.put(e.request, res.clone());
-          return res;
-        }).catch(function () { return hit; });
-        return hit || fresh;
+    fetch(e.request, { cache: "no-cache" }).then(function (res) {
+      if (res && res.ok) {
+        var copy = res.clone();
+        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
+      }
+      return res;
+    }).catch(function () {
+      return caches.open(CACHE).then(function (c) {
+        return c.match(e.request, { ignoreSearch: true }).then(function (hit) {
+          return hit || (e.request.mode === "navigate" ? c.match("index.html") : undefined) || Response.error();
+        });
       });
     })
   );
