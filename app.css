@@ -368,3 +368,17 @@ input, select, textarea { border-radius: 12px; font-family: var(--font-sans); }
 .compare-head.bad, .cmp-diff.bad, .cmp-notes .bad b { color: var(--action-no-text); }
 .fixed-list .fixed-btn .check { color: var(--action-yes); }
 .sheet { border-radius: 24px 24px 0 0; }
+
+/* Budget summary at the top of "Por categoría". */
+.budget { display: grid; gap: 8px; padding: 14px; margin-bottom: 4px; background: var(--surface-page); border-radius: 16px; }
+.budget p { margin: 0; }
+.budget-title { font-size: 13px; font-weight: 700; color: var(--ink-muted); }
+.budget-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-variant-numeric: tabular-nums; }
+.budget-row b { font-size: 20px; font-weight: 800; }
+.mbar.big { height: 10px; background: var(--track); }
+.mbar.over i { background: var(--action-no); }
+.budget-main { font-size: 14px; font-weight: 700; }
+.budget-main.bad { color: var(--action-no-text); }
+.budget-pace { font-size: 13px; font-weight: 600; }
+.budget-pace.good { color: var(--action-yes); }
+.budget-pace.bad { color: var(--action-no-text); }

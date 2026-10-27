@@ -43,7 +43,7 @@ App web instalable en iPhone (Safari → Compartir → Añadir a pantalla de ini
 
 ## Estilo Moderna (tokens en `:root` de `app.css`)
 
-fondo `#f3f5f8` · tarjetas `#ffffff` radio 20 · texto `#111827` · secundario `#5f6b7a` · acento verde azulado `#0f766e` (suave `#d9f2ee`) · pasado de límite naranja `#c2410c` (texto `#9a3412`, suave `#ffedd5`) · tarjeta principal oscura `#111827` con acento `#7ee0cf`. Botones radio 14. Arriba de cada mes, la tarjeta oscura muestra **lo gastado este mes** en grande (no el ahorro), % de lo que entró, barra de progreso y tres cajitas: Principal (editable), Extra, Ahorro. Categorías: nombre + pastilla (% o «+X € pasado»), barra fina medida contra su propio límite, «x de y».
+fondo `#f3f5f8` · tarjetas `#ffffff` radio 20 · texto `#111827` · secundario `#5f6b7a` · acento verde azulado `#0f766e` (suave `#d9f2ee`) · pasado de límite naranja `#c2410c` (texto `#9a3412`, suave `#ffedd5`) · tarjeta principal oscura `#111827` con acento `#7ee0cf`. Botones radio 14. Arriba de cada mes, la tarjeta oscura muestra **lo gastado este mes** en grande (no el ahorro), % de lo que entró, barra de progreso y tres cajitas: Principal (editable), Extra, Ahorro. Arriba de «Por categoría», tarjeta **Presupuesto de categorías**: gastado en categorías con límite (sin gastos fijos) frente a la suma de límites, barra (naranja si se pasa), «Te quedan X € para N días (hoy incluido) → unos Y € al día» y frase de ritmo (% del dinero frente a % del mes). Sin marca de «hoy» en la barra (el usuario no la quiso). Meses pasados/cerrados: resultado final; futuros: «Aún no ha empezado». Categorías: nombre + pastilla (% o «+X € pasado»), barra fina medida contra su propio límite, «x de y».
 
 ## Probar
 

@@ -219,6 +219,7 @@
   function renderCats(s) {
     var mes = view.mes, cats = catsFor(mes);
     var rows = $("rows"); rows.textContent = "";
+    rows.appendChild(budgetSummary(mes, cats, s));
     if (s.porCat[FIJOS]) rows.appendChild(el("div", { class: "mrow" }, [
       el("div", { class: "mrow-head" }, [el("span", { class: "name", text: "Gastos fijos" }), el("span", { class: "pill", text: "sin límite" })]),
       el("div", { class: "mrow-sub" }, [el("b", { text: eur.format(s.porCat[FIJOS]) }), " este mes"])
@@ -254,6 +255,42 @@
     });
     $("cat-form").hidden = !view.editingCats;
     $("toggle-cats").textContent = view.editingCats ? "Listo" : "Editar categorías";
+  }
+
+  /* Budget of all categories with a limit (fixed expenses left out): spent vs the sum of limits. */
+  function budgetSummary(mes, cats, s) {
+    var total = cats.reduce(function (t, c) { return t + (c.limite || 0); }, 0);
+    var spent = cats.reduce(function (t, c) { return t + (s.porCat[c.id] || 0); }, 0);
+    var box = el("div", { class: "budget" }, [el("p", { class: "budget-title", text: "Presupuesto de categorías" })]);
+    if (!total) {
+      box.appendChild(el("p", { class: "budget-main", text: "Pon un límite a tus categorías para ver aquí tu presupuesto del mes." }));
+      return box;
+    }
+    var pct = spent / total * 100, over = spent > total, left = total - spent;
+    box.appendChild(el("div", { class: "budget-row" }, [
+      el("span", null, [el("b", { text: eur.format(spent) }), " de " + eur.format(total)]),
+      el("span", { class: "pill" + (over ? " pill-over" : ""), text: Math.round(pct) + " %" })
+    ]));
+    box.appendChild(el("div", { class: "mbar big" + (over ? " over" : ""), role: "img", "aria-label": "Gastado " + eur.format(spent) + " de " + eur.format(total) }, [
+      el("i", { style: "width:" + Math.min(100, pct).toFixed(1) + "%" })
+    ]));
+
+    var main, pace = null, paceBad = false;
+    if (mes > currentMes) main = "Aún no ha empezado.";
+    else if (mes < currentMes || isClosed(mes)) {
+      main = over ? "Te pasaste " + eur.format(-left) + " del presupuesto." : "Terminaste con " + eur.format(left) + " por debajo del presupuesto.";
+    } else if (over) {
+      main = "Te has pasado " + eur.format(-left) + " del presupuesto.";
+    } else {
+      var days = lastDay(mes) - today.getDate() + 1; // today included
+      main = "Te quedan " + eur.format(left) + " para " + days + (days === 1 ? " día" : " días") + " → unos " + eur.format(Math.floor(left / days)) + " al día.";
+      var monthPct = today.getDate() / lastDay(mes) * 100;
+      paceBad = pct > monthPct + 2;
+      pace = (paceBad ? "Vas un poco por delante: llevas el " : "Vas bien: llevas el ") + Math.round(pct) + " % del dinero y ha pasado el " + Math.round(monthPct) + " % del mes.";
+    }
+    box.appendChild(el("p", { class: "budget-main" + (over ? " bad" : ""), text: main }));
+    if (pace) box.appendChild(el("p", { class: "budget-pace " + (paceBad ? "bad" : "good"), text: pace }));
+    return box;
   }
 
   function editRow(c) {
