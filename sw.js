@@ -1,6 +1,6 @@
 // Network first: online, always the latest version (and refresh the cache);
 // offline, the cached copy. Bump CACHE on every change.
-var CACHE = "presupuesto-v13";
+var CACHE = "presupuesto-v14";
 var FILES = [
   "./",
   "index.html",

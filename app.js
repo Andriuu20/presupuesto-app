@@ -2,7 +2,7 @@
   "use strict";
 
   var KEY = "presupuesto-v1";
-  var VERSION = "13"; // keep in step with CACHE in sw.js
+  var VERSION = "14"; // keep in step with CACHE in sw.js
   var DEFAULT_CATS = [
     ["Vivienda", 1100], ["Comida", 450], ["Transporte", 180],
     ["Servicios", 220], ["Ocio", 250], ["Salud", 120]
@@ -255,6 +255,8 @@
       rows.appendChild(row);
     });
     $("cat-form").hidden = !view.editingCats;
+    $("assign-note").hidden = !view.editingCats;
+    if (view.editingCats) showAssign(assignNote(mes, s));
     $("toggle-cats").textContent = view.editingCats ? "Listo" : "Editar categorías";
   }
 
@@ -263,6 +265,7 @@
     var total = cats.reduce(function (t, c) { return t + (c.limite || 0); }, 0);
     var spent = cats.reduce(function (t, c) { return t + (s.porCat[c.id] || 0); }, 0);
     var box = el("div", { class: "budget" }, [el("p", { class: "budget-title", text: "Presupuesto de categorías" })]);
+    box.appendChild(budgetPlan(mes, total, s));
     if (!total) {
       box.appendChild(el("p", { class: "budget-main", text: "Pon un límite a tus categorías para ver aquí tu presupuesto del mes." }));
       return box;
@@ -294,6 +297,50 @@
     return box;
   }
 
+  /* The plan: what's left after fixed expenses must cover the category limits.
+     Extra income is not part of this check; it only adds to the expected saving. */
+  function budgetPlan(mes, limits, s) {
+    var plan = el("div", { class: "plan" });
+    if (!s.principal) {
+      plan.appendChild(el("p", { class: "plan-hint", text: "Apunta tu ingreso principal para comprobar si tus límites caben." }));
+      return plan;
+    }
+    var disponible = s.principal - s.fijos, previsto = disponible - limits + s.extra, falta = limits - disponible;
+    if (falta > 0) {
+      var warn = el("div", { class: "plan-warn", role: "status" }, [
+        el("p", { class: "plan-warn-title", text: "Tus límites no caben" }),
+        el("p", { text: "Suman " + eur.format(limits) + " y solo tienes " + eur.format(disponible) + " disponibles. Baja los límites " + eur.format(falta) + " para no quedarte sin ahorro." })
+      ]);
+      if (!isClosed(mes) && !hasSnapshot(mes)) warn.appendChild(el("button", { type: "button", class: "btn btn-warn", text: "Ajustar límites", on: { click: function () {
+        view.editingCats = true; view.editing = null; view.confirm = null; render();
+        var head = $("toggle-cats"); if (head) head.scrollIntoView({ behavior: "smooth", block: "start" });
+      } } }));
+      plan.appendChild(warn);
+    }
+    function line(label, value, cls, sub) {
+      return el("div", { class: "plan-line" + (cls ? " " + cls : "") }, [
+        el("span", null, [label, sub ? el("small", { text: sub }) : null]), el("b", { text: value })
+      ]);
+    }
+    plan.appendChild(line("Disponible", eur.format(disponible), null, eur.format(s.principal) + " sueldo − " + eur.format(s.fijos) + " fijos"));
+    plan.appendChild(line("Límites", "− " + eur.format(limits)));
+    if (s.extra) plan.appendChild(line("Ingresos extra", "+ " + eur.format(s.extra)));
+    plan.appendChild(line("Ahorro previsto", money(previsto), previsto < 0 ? "total bad" : "total good"));
+    return plan;
+  }
+
+  // While editing categories: how much of the available money is still unassigned.
+  function assignNote(mes, s, overrideId, overrideLimit) {
+    var cats = catsFor(mes), limits = cats.reduce(function (t, c) { return t + (c.id === overrideId ? overrideLimit : (c.limite || 0)); }, 0);
+    if (!s.principal) return { text: "Apunta tu ingreso principal para ver cuánto puedes repartir.", bad: false };
+    var left = s.principal - s.fijos - limits;
+    return left >= 0 ? { text: "Quedan " + eur.format(left) + " sin asignar.", bad: false } : { text: "Te pasas " + eur.format(-left) + " de lo disponible.", bad: true };
+  }
+  function showAssign(note) {
+    var p = $("assign-note"); if (!p) return;
+    p.textContent = note.text; p.className = "assign-note" + (note.bad ? " bad" : "");
+  }
+
   function editRow(c) {
     var name = el("input", { id: "edit-name", maxlength: "40", value: c.nombre, "aria-label": "Nombre de la categoría", autocomplete: "off" });
     var lim = el("input", { id: "edit-limit", type: "text", inputmode: "decimal", value: String(c.limite).replace(".", ","), "aria-label": "Límite en euros", autocomplete: "off" });
@@ -305,6 +352,10 @@
     }
     [name, lim].forEach(function (i) {
       i.addEventListener("keydown", function (e) { if (e.key === "Enter") saveEdit(); if (e.key === "Escape") done(); });
+    });
+    lim.addEventListener("input", function () {
+      var v = num(lim.value);
+      if (v >= 0) showAssign(assignNote(view.mes, stats(view.mes), c.id, v));
     });
     setTimeout(function () { name.focus(); }, 0);
     return el("div", { class: "row editing" }, [name, lim, el("div", { class: "actions" }, [
@@ -664,6 +715,15 @@
     save();
     $("exp-what").value = ""; $("exp-amount").value = "";
     render();
+  });
+
+  $("cat-limit").addEventListener("input", function () {
+    var v = num(this.value), s = stats(view.mes), note = assignNote(view.mes, s);
+    if (v > 0 && s.principal) {
+      var left = s.principal - s.fijos - catsFor(view.mes).reduce(function (t, c) { return t + (c.limite || 0); }, 0) - v;
+      note = left >= 0 ? { text: "Quedan " + eur.format(left) + " sin asignar.", bad: false } : { text: "Te pasas " + eur.format(-left) + " de lo disponible.", bad: true };
+    }
+    showAssign(note);
   });
 
   $("cat-form").addEventListener("submit", function (e) {
