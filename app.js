@@ -2,7 +2,7 @@
   "use strict";
 
   var KEY = "presupuesto-v1";
-  var VERSION = "14"; // keep in step with CACHE in sw.js
+  var VERSION = "15"; // keep in step with CACHE in sw.js
   var DEFAULT_CATS = [
     ["Vivienda", 1100], ["Comida", 450], ["Transporte", 180],
     ["Servicios", 220], ["Ocio", 250], ["Salud", 120]
@@ -18,13 +18,17 @@
      `cats` and `fijos` are frozen copies taken when the month is closed.
      data.fijos = [{ id, nombre, importe, desde "YYYY-MM", meses (null = indefinido), baja "YYYY-MM",
                      importes: [{ desde, importe }], cambios: { "YYYY-MM": { importe, quitado } } }]
-     data.extras = [{ id, tipo, concepto, importe, fecha, creado }] */
+     data.extras = [{ id, tipo, concepto, importe, fecha, creado }]
+     data.sueldos = [{ desde "YYYY-MM", importe }]: the salary repeats every month from `desde` on.
+     meses[mes].ingresos = a one-off salary for that month only; .sueldoCongelado = salary frozen at close;
+     .arrastre = { importe, de "YYYY-MM" }: saving carried over from the previous month. */
   function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 7); }
   function load() {
     try {
       var d = JSON.parse(localStorage.getItem(KEY));
       if (d && Array.isArray(d.categorias) && Array.isArray(d.gastos)) {
         d.meses = d.meses || {}; d.fijos = d.fijos || []; d.extras = d.extras || [];
+        if (!d.sueldos) migrateSueldo(d);
         return d;
       }
     } catch (e) {}
@@ -32,6 +36,19 @@
       categorias: DEFAULT_CATS.map(function (c) { return { id: uid(), nombre: c[0], limite: c[1] }; }),
       gastos: [], meses: {}, fijos: [], extras: [], tema: "business"
     };
+  }
+  // Older versions stored the salary per month. The latest month with one becomes the fixed salary;
+  // other months keep theirs as a one-off only where it differs.
+  function migrateSueldo(d) {
+    d.sueldos = [];
+    var keys = Object.keys(d.meses).filter(function (k) { return (d.meses[k].ingresos || 0) > 0; }).sort();
+    if (!keys.length) return;
+    var last = keys[keys.length - 1], amount = d.meses[last].ingresos;
+    d.sueldos.push({ desde: last, importe: amount });
+    keys.forEach(function (k) {
+      if (d.meses[k].cerrado) d.meses[k].sueldoCongelado = d.meses[k].ingresos;
+      if (k >= last && d.meses[k].ingresos === amount) delete d.meses[k].ingresos;
+    });
   }
   var data = load();
   function save() {
@@ -103,6 +120,18 @@
                cuota: f.meses ? monthsBetween(f.desde, mes) + 1 : null, meses: f.meses || null };
     });
   }
+  function sueldoFijo(mes) {
+    var v = 0;
+    (data.sueldos || []).slice().sort(function (a, b) { return a.desde < b.desde ? -1 : 1; })
+      .forEach(function (x) { if (x.desde <= mes) v = x.importe; });
+    return v;
+  }
+  function sueldoFor(mes) {
+    var i = info(mes);
+    if (i.cerrado && i.sueldoCongelado != null) return i.sueldoCongelado;
+    if (i.ingresos != null) return i.ingresos;
+    return sueldoFijo(mes);
+  }
   function extrasFor(mes) { return data.extras.filter(function (x) { return (x.fecha || "").slice(0, 7) === mes; }); }
 
   function stats(mes) {
@@ -111,10 +140,12 @@
     var fijos = fijosFor(mes).reduce(function (s, f) { return f.quitado ? s : s + f.importe; }, 0);
     if (fijos) por[FIJOS] = fijos;
     var ex = extrasFor(mes), extra = ex.reduce(function (s, x) { return s + x.importe; }, 0);
-    var principal = info(mes).ingresos || 0, ingresos = principal + extra, gastos = variable + fijos;
-    // Fixed expenses alone don't make a month "used": future months would all look negative.
-    return { principal: principal, extra: extra, ingresos: ingresos, fijos: fijos, gastos: gastos, ahorro: ingresos - gastos,
-             porCat: por, count: gs.length, hasData: principal > 0 || gs.length > 0 || ex.length > 0 };
+    var sueldo = sueldoFor(mes), arrastre = (info(mes).arrastre || {}).importe || 0;
+    var principal = sueldo + arrastre, ingresos = principal + extra, gastos = variable + fijos;
+    // A repeating salary or fixed expenses alone don't make a future month "used".
+    var used = gs.length > 0 || ex.length > 0 || arrastre > 0 || info(mes).ingresos != null || (sueldo > 0 && mes <= currentMes);
+    return { sueldo: sueldo, arrastre: arrastre, principal: principal, extra: extra, ingresos: ingresos, fijos: fijos, gastos: gastos,
+             ahorro: ingresos - gastos, porCat: por, count: gs.length, hasData: used };
   }
   function catName(id, mes) {
     if (id === FIJOS) return "Gastos fijos";
@@ -137,6 +168,7 @@
     showError("exp-error"); showError("cat-error");
     $("fijo-form").hidden = true; $("extra-form").hidden = true; $("extra-date").value = "";
     $("topup-note").hidden = true; $("paste-box").hidden = true; exportMsg("");
+    view.sueldoPendiente = null; view.carryEdit = null;
     render(); window.scrollTo(0, 0);
   }
   function openIndex() {
@@ -157,7 +189,7 @@
     var yearSaving = 0;
     for (var m = 1; m <= 12; m++) {
       var mes = view.year + "-" + pad(m), s = stats(mes), closed = isClosed(mes);
-      if (s.hasData) yearSaving += s.ahorro;
+      if (s.hasData) yearSaving += s.ahorro - s.arrastre;
       var state = closed ? "Guardado" : mes === currentMes ? "En curso" : s.hasData ? "Abierto" : "—";
       var cls = "tile" + (closed ? " closed" : "") + (mes === currentMes ? " current" : "") + (!s.hasData && !closed ? " empty" : "");
       box.appendChild(el("button", {
@@ -191,9 +223,10 @@
     var incInput = $("income");
     $("income-edit").hidden = closed;
     $("income-read").hidden = !closed;
-    $("income-read").textContent = eur.format(s.principal);
+    $("income-read").textContent = eur.format(s.sueldo);
     if (closed) $("income-label").removeAttribute("for"); else $("income-label").setAttribute("for", "income");
-    if (document.activeElement !== incInput) incInput.value = s.principal ? String(s.principal).replace(".", ",") : "";
+    if (document.activeElement !== incInput && !view.sueldoPendiente) incInput.value = s.sueldo ? String(s.sueldo).replace(".", ",") : "";
+    renderSueldo(mes, s, closed);
     $("extra-sum").textContent = (s.extra ? "+" : "") + eur.format(s.extra);
     var pct = s.ingresos > 0 ? Math.round(s.gastos / s.ingresos * 100) : null;
     $("hero-sub").textContent = (pct == null ? "Apunta tu ingreso principal para ver qué parte has gastado"
@@ -322,7 +355,8 @@
         el("span", null, [label, sub ? el("small", { text: sub }) : null]), el("b", { text: value })
       ]);
     }
-    plan.appendChild(line("Disponible", eur.format(disponible), null, eur.format(s.principal) + " sueldo − " + eur.format(s.fijos) + " fijos"));
+    plan.appendChild(line("Disponible", eur.format(disponible), null, eur.format(s.sueldo) + " sueldo" +
+      (s.arrastre ? " + " + eur.format(s.arrastre) + " de " + monthWord(info(mes).arrastre.de) : "") + " − " + eur.format(s.fijos) + " fijos"));
     plan.appendChild(line("Límites", "− " + eur.format(limits)));
     if (s.extra) plan.appendChild(line("Ingresos extra", "+ " + eur.format(s.extra)));
     plan.appendChild(line("Ahorro previsto", money(previsto), previsto < 0 ? "total bad" : "total good"));
@@ -649,7 +683,7 @@
       zone.appendChild(el("p", { class: "note center", text: "Este mes está guardado: solo se puede consultar." }));
       zone.appendChild(el("button", { type: "button", class: "link", text: "Reabrir para editar", on: { click: function () {
         // Fixed expenses go live again so they can be edited; the definitions keep their history.
-        setInfo(mes, { cerrado: false, fijos: undefined }); save(); render();
+        setInfo(mes, { cerrado: false, fijos: undefined, sueldoCongelado: undefined }); save(); render();
       } } }));
       return;
     }
@@ -671,9 +705,47 @@
     // Freeze categories and limits the first time the month is closed.
     if (!hasSnapshot(mes)) patch.cats = data.categorias.map(function (c) { return { id: c.id, nombre: c.nombre, limite: c.limite }; });
     patch.fijos = fijosFor(mes).map(function (f) { return Object.assign({}, f); });
+    patch.sueldoCongelado = sueldoFor(mes);
     setInfo(mes, patch);
     view.confirm = null; view.editingCats = false; view.editing = null;
     save(); render(); window.scrollTo(0, 0);
+    var ahorro = stats(mes).ahorro, next = addMonths(mes, 1);
+    if (ahorro > 0 && !isClosed(next)) openCarrySheet(mes, next, Math.round(ahorro * 100) / 100);
+  }
+
+  /* ---------- carry the saving over to next month ---------- */
+  function openCarrySheet(mes, next, ahorro) {
+    var body = $("carry-sheet-body"), prev = (info(next).arrastre || {}).importe;
+    body.textContent = "";
+    var inp = el("input", { id: "carry-amount", type: "text", inputmode: "decimal", value: String(prev != null ? Math.min(prev, ahorro) : ahorro).replace(".", ","), autocomplete: "off" });
+    var rest = el("p", { class: "note" }), go = el("button", { type: "button", class: "btn btn-yes btn-block" }), err = el("p", { class: "form-error", hidden: "hidden" });
+    function update() {
+      var v = num(inp.value), ok = v >= 0 && v <= ahorro;
+      go.textContent = ok && v > 0 ? "Pasar " + eur.format(v) + " a " + monthWord(next) : "Pasar a " + monthWord(next);
+      rest.textContent = ok ? (ahorro - v > 0 ? "Los otros " + eur.format(Math.round((ahorro - v) * 100) / 100) + " quedan aparte, fuera de la app." : "Pasas todo lo que te sobró.") : "";
+      err.hidden = ok; err.textContent = ok ? "" : "Escribe un importe entre 0 y " + eur.format(ahorro) + ".";
+      go.disabled = !ok || !(v > 0);
+    }
+    inp.addEventListener("input", update);
+    body.appendChild(el("div", { class: "carry-head" }, [
+      el("span", { class: "carry-check", "aria-hidden": "true", text: "✓" }),
+      el("h2", { id: "carry-title", text: cap(monthWord(mes)) + " guardado" })
+    ]));
+    body.appendChild(el("div", { class: "carry-box" }, [el("span", { text: "Te sobraron" }), el("b", { text: eur.format(ahorro) })]));
+    body.appendChild(el("p", { class: "close-ask", text: "¿Quieres añadir este ahorro a tu saldo de " + monthWord(next) + "?" }));
+    body.appendChild(el("div", { class: "field" }, [el("label", { for: "carry-amount", text: "Cuánto pasar a " + monthWord(next) + " (€)" }), inp]));
+    body.appendChild(rest); body.appendChild(err);
+    go.addEventListener("click", function () {
+      var v = num(inp.value);
+      if (!(v > 0 && v <= ahorro)) return;
+      setInfo(next, { arrastre: { importe: v, de: mes } }); save(); closeCarrySheet(); render();
+    });
+    body.appendChild(go);
+    body.appendChild(el("button", { type: "button", class: "link", text: "No, gracias", on: { click: function () { closeCarrySheet(); } } }));
+    update();
+    $("carry-sheet").hidden = false; document.body.style.overflow = "hidden";
+  }
+  function closeCarrySheet() { $("carry-sheet").hidden = true; document.body.style.overflow = ""; 
   }
 
   /* ---------- edits ---------- */
@@ -696,11 +768,84 @@
   });
 
   $("income").addEventListener("change", function () {
-    if (isClosed(view.mes)) return;
+    var mes = view.mes;
+    if (isClosed(mes)) return;
     var v = this.value.trim() === "" ? 0 : num(this.value);
-    if (!(v >= 0)) { render(); return; }
-    setInfo(view.mes, { ingresos: v }); save(); render();
+    if (!(v >= 0) || v === sueldoFor(mes)) { view.sueldoPendiente = null; render(); return; }
+    // First salary ever: it simply becomes the fixed one from this month.
+    if (!(data.sueldos || []).length && info(mes).ingresos == null) { setSueldoDesde(mes, v); return; }
+    view.sueldoPendiente = v; render();
   });
+
+  function setSueldoDesde(mes, v) {
+    data.sueldos = (data.sueldos || []).filter(function (x) { return x.desde < mes; });
+    data.sueldos.push({ desde: mes, importe: v });
+    // One-off salaries from here on would hide the new one (saved months keep theirs).
+    Object.keys(data.meses).forEach(function (k) {
+      if (k >= mes && !data.meses[k].cerrado) delete data.meses[k].ingresos;
+    });
+    view.sueldoPendiente = null; save(); render();
+  }
+
+  function renderSueldo(mes, s, closed) {
+    var note = $("sueldo-note"), ask = $("sueldo-ask"), carry = $("carry-line");
+    var i = info(mes), fijo = sueldoFijo(mes);
+    note.textContent = "";
+    if (i.ingresos != null && !closed) {
+      note.appendChild(document.createTextNode("Solo este mes" + (fijo ? " (normalmente " + eur.format(fijo) + ")" : "")));
+      if (fijo || (data.sueldos || []).length) note.appendChild(el("button", { type: "button", class: "chip-link", text: "Usar el fijo", on: { click: function () {
+        var m = Object.assign({}, data.meses[mes]); delete m.ingresos; data.meses[mes] = m; save(); render();
+      } } }));
+    } else if (s.sueldo) {
+      var from = (data.sueldos || []).filter(function (x) { return x.desde <= mes; }).sort(function (a, b) { return a.desde < b.desde ? 1 : -1; })[0];
+      note.textContent = closed ? "Sueldo de este mes" : "Sueldo fijo" + (from ? " desde " + monthWord(from.desde) : "");
+    }
+    // Ask how far a changed salary applies.
+    ask.textContent = "";
+    ask.hidden = view.sueldoPendiente == null || closed;
+    if (!ask.hidden) {
+      var v = view.sueldoPendiente;
+      ask.appendChild(el("p", { text: "¿Cambiar el sueldo a " + eur.format(v) + "…" }));
+      ask.appendChild(el("div", { class: "sueldo-ask-btns" }, [
+        el("button", { type: "button", class: "btn btn-hero-ghost", text: "Solo este mes", on: { click: function () {
+          setInfo(mes, { ingresos: v }); view.sueldoPendiente = null; save(); render();
+        } } }),
+        el("button", { type: "button", class: "btn btn-hero", text: "Desde este mes", on: { click: function () { setSueldoDesde(mes, v); } } })
+      ]));
+      ask.appendChild(el("button", { type: "button", class: "chip-link", text: "Cancelar", on: { click: function () { view.sueldoPendiente = null; render(); } } }));
+    }
+    // Saving carried over from the previous month.
+    carry.textContent = "";
+    carry.hidden = !s.arrastre && view.carryEdit !== mes;
+    if (carry.hidden) return;
+    var from = monthWord(i.arrastre ? i.arrastre.de : addMonths(mes, -1));
+    if (view.carryEdit === mes) {
+      var inp = el("input", { id: "carry-input", type: "text", inputmode: "decimal", value: String(s.arrastre).replace(".", ","), "aria-label": "Importe pasado de " + from, autocomplete: "off" });
+      carry.appendChild(el("div", { class: "carry-edit" }, [
+        el("label", { for: "carry-input", text: "Pasado de " + from + " (€)" }), inp,
+        el("button", { type: "button", class: "btn btn-hero", text: "Guardar", on: { click: function () {
+          var n = num(inp.value);
+          if (!(n >= 0)) { inp.focus(); return; }
+          if (n === 0) { var m = Object.assign({}, data.meses[mes]); delete m.arrastre; data.meses[mes] = m; }
+          else setInfo(mes, { arrastre: { importe: n, de: i.arrastre.de } });
+          view.carryEdit = null; save(); render();
+        } } }),
+        el("button", { type: "button", class: "chip-link", text: "Cancelar", on: { click: function () { view.carryEdit = null; render(); } } })
+      ]));
+      setTimeout(function () { inp.focus(); }, 0);
+      return;
+    }
+    carry.appendChild(el("div", null, [
+      el("p", { class: "carry-amount", text: "+" + eur.format(s.arrastre) + " de " + from }),
+      el("p", { class: "carry-sub", text: "Ahorro que pasaste de " + from })
+    ]));
+    if (!closed) carry.appendChild(el("div", { class: "carry-actions" }, [
+      el("button", { type: "button", class: "chip-link", text: "Cambiar", on: { click: function () { view.carryEdit = mes; render(); } } }),
+      el("button", { type: "button", class: "chip-link", text: "Quitar", on: { click: function () {
+        var m = Object.assign({}, data.meses[mes]); delete m.arrastre; data.meses[mes] = m; save(); render();
+      } } })
+    ]));
+  }
 
   $("exp-form").addEventListener("submit", function (e) {
     e.preventDefault();
@@ -975,7 +1120,7 @@
     var cats = catsFor(mes);
     var model = {
       titulo: "Presupuesto · " + monthName(mes),
-      principal: info(mes).ingresos || 0,
+      principal: stats(mes).principal,
       cats: cats.map(function (c) { return { nombre: c.nombre, limite: c.limite || 0 }; }),
       gastos: gastosFor(mes).sort(function (a, b) { return a.fecha.localeCompare(b.fecha); })
         .map(function (g) { return { fecha: g.fecha, concepto: g.concepto, categoria: catName(g.categoria, mes), importe: g.importe }; }),

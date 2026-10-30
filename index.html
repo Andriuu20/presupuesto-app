@@ -88,10 +88,13 @@
           <label for="income" id="income-label">Principal</label>
           <div class="income" id="income-edit"><input id="income" type="text" inputmode="decimal" autocomplete="off" placeholder="0"><span aria-hidden="true">€</span></div>
           <strong id="income-read" hidden></strong>
+          <span class="sueldo-note" id="sueldo-note"></span>
         </div>
         <div class="chip-box"><span>Extra</span><strong id="extra-sum">0 €</strong></div>
         <div class="chip-box saving" id="sav-box"><span>Ahorro</span><strong id="sav">0 €</strong></div>
       </div>
+      <div class="sueldo-ask" id="sueldo-ask" role="group" aria-label="Cambiar el sueldo" hidden></div>
+      <div class="carry-line" id="carry-line" hidden></div>
     </section>
 
     <section class="card" id="fijos-card">
@@ -214,6 +217,11 @@
     </section>
     <section class="close-zone" id="close-zone"></section>
   </main>
+</div>
+
+<!-- Carry the saving over to next month -->
+<div class="sheet-backdrop" id="carry-sheet" hidden>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="carry-title" id="carry-sheet-body"></div>
 </div>
 
 <!-- Fixed expense actions -->
